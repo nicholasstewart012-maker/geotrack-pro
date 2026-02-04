@@ -377,6 +377,51 @@ def get_cost_analytics(db: Session = Depends(lambda: next(get_db_session()))):
     total = sum(log.cost for log in logs)
     return {"total_maintenance_cost": total, "count": len(logs)}
 
+@app.get("/analytics/cost-trend")
+def get_cost_trend(db: Session = Depends(lambda: next(get_db_session()))):
+    from collections import defaultdict
+    # 1. Get logs from last 12 months
+    # For now, just getting all logs and aggregating, as volume is low
+    logs = db.query(db_mod.MaintenanceLog).all()
+    
+    # 2. Bucket by Month (YYYY-MM)
+    monthly_data = defaultdict(float)
+    
+    # Pre-fill last 6 months so we don't have gaps
+    today = datetime.utcnow()
+    for i in range(5, -1, -1):
+        d = today - timedelta(days=30*i)
+        key = d.strftime("%b") # Jan, Feb, etc.
+        monthly_data[key] = 0.0
+        
+    # Aggregate actual data
+    for log in logs:
+        if log.performed_date:
+            month_key = log.performed_date.strftime("%b")
+            monthly_data[month_key] += log.cost
+            
+    # 3. Format for Chart
+    # Ensure chronological order by iterating through the pre-calc keys if we used that method, 
+    # but since dictionary order is insertion-based in Py3.7+, we might need to be careful if data is old.
+    # Let's simple-sort by using a fixed list of last 6 months names
+    
+    labels = []
+    data = []
+    
+    # Regenerate the ordered list of last 6 months
+    for i in range(5, -1, -1):
+        # Approximation of months
+        d = today - timedelta(days=30*i)
+        month_name = d.strftime("%b")
+        if month_name not in labels: # Avoid dupes if days=30 logic overlaps slightly
+            labels.append(month_name)
+            data.append(monthly_data[month_name])
+            
+    return {
+        "labels": labels,
+        "data": data
+    }
+
 @app.get("/settings/all")
 def get_all_settings(db: Session = Depends(lambda: next(get_db_session()))):
     settings_list = db.query(db_mod.Setting).all()

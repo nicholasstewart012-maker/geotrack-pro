@@ -73,6 +73,7 @@ const App = () => {
         admin_email: ''
     });
     const [stats, setStats] = useState({ total_maintenance_cost: 0, count: 0 });
+    const [costTrend, setCostTrend] = useState<{ labels: string[], data: number[] }>({ labels: [], data: [] });
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -112,6 +113,12 @@ const App = () => {
             if (res.ok) {
                 const data = await res.json();
                 setStats(data);
+            }
+
+            const trendRes = await fetch(`${API_BASE}/analytics/cost-trend`);
+            if (trendRes.ok) {
+                const trendData = await trendRes.json();
+                setCostTrend(trendData);
             }
         } catch (err) {
             console.error("Failed to fetch stats", err);
@@ -384,19 +391,23 @@ const App = () => {
                                 <div className="ios-card p-6 space-y-6">
                                     <div className="flex justify-between items-start">
                                         <p className="text-[10px] font-black text-ios-secondary uppercase tracking-widest">Maintenance Cost Trend</p>
-                                        <span className="text-ios-blue text-[10px] font-black">+12% vs LY</span>
                                     </div>
                                     <div className="h-40 w-full">
                                         <LineChart
-                                            data={[450, 380, 520, 410, 680, 590, 720, 640]}
-                                            labels={['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug']}
+                                            data={costTrend.data.length > 0 ? costTrend.data : [0, 0, 0, 0, 0, 0]}
+                                            labels={costTrend.labels}
                                         />
                                     </div>
                                     <div className="flex justify-between text-[8px] font-black text-ios-secondary uppercase px-4">
-                                        <span>Jan</span>
-                                        <span>Apr</span>
-                                        <span>Jul</span>
-                                        <span>Dec</span>
+                                        {costTrend.labels.length > 0 ? (
+                                            <>
+                                                <span>{costTrend.labels[0]}</span>
+                                                <span>{costTrend.labels[Math.floor(costTrend.labels.length / 2)]}</span>
+                                                <span>{costTrend.labels[costTrend.labels.length - 1]}</span>
+                                            </>
+                                        ) : (
+                                            <span>No Data</span>
+                                        )}
                                     </div>
                                 </div>
 

@@ -83,7 +83,7 @@ const App = () => {
     const [trendPeriod, setTrendPeriod] = useState("6M");
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (token) {
             setIsAuthenticated(true);
             fetchUser(); // Fetch user details immediately
@@ -95,7 +95,7 @@ const App = () => {
 
     const fetchUser = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) return;
 
             const res = await fetch(`${API_BASE}/auth/me`, {
@@ -225,7 +225,7 @@ const App = () => {
 
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const headers: any = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -283,7 +283,7 @@ const App = () => {
             }
 
             const data = await response.json();
-            localStorage.setItem('token', data.access_token);
+            sessionStorage.setItem('token', data.access_token);
             setIsAuthenticated(true);
             fetchUser(); // Fetch user details
             fetchVehicles();
@@ -299,7 +299,7 @@ const App = () => {
     const handleLogMaintenance = async (logData: any) => {
         setIsSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const headers: any = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -586,7 +586,7 @@ const App = () => {
                 isOpen={showProfile}
                 onClose={() => setShowProfile(false)}
                 onLogout={() => {
-                    localStorage.removeItem('token');
+                    sessionStorage.removeItem('token');
                     setIsAuthenticated(false);
                     setShowProfile(false);
                 }}

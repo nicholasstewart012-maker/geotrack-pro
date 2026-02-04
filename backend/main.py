@@ -230,8 +230,19 @@ def health_check():
     health_status = {
         "status": "ok", 
         "timestamp": datetime.now().isoformat(),
-        "database": "unknown"
+        "database": "unknown",
+        "connection_info": "unknown"
     }
+
+    # Debug: Identify which DB we are using
+    if db_mod and engine:
+        try:
+            url = engine.url
+            clean_host = url.host if url.host else "localhost"
+            clean_driver = url.drivername
+            health_status["connection_info"] = f"{clean_driver}://{clean_host}"
+        except:
+            health_status["connection_info"] = "parsing_error"
     
     if SAFE_MODE_ERROR:
         return {

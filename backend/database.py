@@ -95,6 +95,16 @@ class LoginLog(Base):
     
     user = relationship("User")
 
+class SupportTicket(Base):
+    __tablename__ = "support_tickets"
+    id = Column(Integer, primary_key=True, index=True)
+    user_email = Column(String)
+    issue_type = Column(String)
+    impact_count = Column(String)
+    description = Column(String)
+    attachment_filename = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 try:
     Base.metadata.create_all(bind=engine)
 except Exception as e:

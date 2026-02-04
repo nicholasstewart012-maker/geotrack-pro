@@ -1,6 +1,7 @@
 import os
 import traceback
 import sys
+import shutil
 from datetime import datetime, timedelta
 from typing import List, Optional
 from contextlib import asynccontextmanager
@@ -10,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 
 # Third-party imports
-from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi import FastAPI, Depends, HTTPException, Request, status, File, UploadFile, Form
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
@@ -373,6 +374,61 @@ def get_vehicle_logs(vehicle_id: int, db: Session = Depends(lambda: next(get_db_
 @app.get("/admin/logs/login")
 def get_login_logs(db: Session = Depends(lambda: next(get_db_session()))):
     return db.query(db_mod.LoginLog).order_by(db_mod.LoginLog.login_time.desc()).limit(100).all()
+
+@app.post("/support/submit")
+async def submit_support_ticket(
+    issue_type: str = Form(...),
+    impact_count: str = Form(...),
+    description: str = Form(...),
+    attachment: Optional[UploadFile] = File(None),
+    user_email: str = Form(...), # Pass this from frontend or extract from token if cleaner
+    db: Session = Depends(lambda: next(get_db_session()))
+):
+    attachment_filename = None
+    
+    # 1. Handle File Upload
+    if attachment:
+        try:
+            upload_dir = "uploads"
+            os.makedirs(upload_dir, exist_ok=True)
+            
+            # Sanitize filename (basic)
+            safe_filename = f"{datetime.utcnow().timestamp()}_{attachment.filename}"
+            file_path = os.path.join(upload_dir, safe_filename)
+            
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(attachment.file, buffer)
+                
+            attachment_filename = safe_filename
+        except Exception as e:
+            print(f"File upload failed: {e}")
+            # Continue without file, or raise error? Let's continue but warn
+            
+    # 2. Save to DB
+    new_ticket = db_mod.SupportTicket(
+        user_email=user_email,
+        issue_type=issue_type,
+        impact_count=impact_count,
+        description=description,
+        attachment_filename=attachment_filename
+    )
+    db.add(new_ticket)
+    db.commit()
+    
+    # 3. Mock Email Logic
+    print("="*30)
+    print(" [MOCK EMAIL SENDING] ")
+    print(f" To: nicholasstewart012@gmail.com")
+    print(f" From: Support System (User: {user_email})")
+    print(f" Subject: New Issue Report: {issue_type}")
+    print(f" Body: ")
+    print(f" Impact: {impact_count}")
+    print(f" Description: {description}")
+    if attachment_filename:
+        print(f" Attachment: {attachment_filename}")
+    print("="*30)
+    
+    return {"status": "success", "ticket_id": new_ticket.id}
 
 @app.get("/analytics/cost")
 def get_cost_analytics(db: Session = Depends(lambda: next(get_db_session()))):

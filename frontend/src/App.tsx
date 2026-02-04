@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Settings, BarChart3, Truck,
+    Settings, BarChart3, Truck, MessageSquare,
     Plus, Gauge, RefreshCw, User, Mail, ChevronRight, Shield, Fuel, Wrench, Menu as MenuIcon, AlertTriangle, ShieldCheck, Download, Activity
 } from 'lucide-react';
 import { cn } from './lib/utils';
@@ -18,6 +18,7 @@ import { LoginView } from './components/LoginView';
 import { ProfileSheet } from './components/ProfileSheet';
 import { SecuritySheet } from './components/SecuritySheet';
 import { PreferencesSheet } from './components/PreferencesSheet';
+import { SupportSheet } from './components/SupportSheet';
 import { LoginLogsSheet } from './components/LoginLogsSheet';
 import { GlobalHistorySheet } from './components/GlobalHistorySheet';
 
@@ -356,7 +357,13 @@ const App = () => {
                     </motion.div>
                     <div className="flex gap-2">
                         <button onClick={fetchVehicles} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-90 transition-all">
-                            <RefreshCw size={18} />
+                            <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
+                        </button>
+                        <button
+                            onClick={() => setShowSupport(true)}
+                            className="p-2 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all active:scale-95"
+                        >
+                            <MessageSquare size={20} />
                         </button>
                         <button
                             onClick={() => setShowProfile(true)}
@@ -681,6 +688,13 @@ const App = () => {
                 isOpen={showGlobalHistory}
                 onClose={() => setShowGlobalHistory(false)}
                 API_BASE={API_BASE}
+            />
+
+            <SupportSheet
+                isOpen={showSupport}
+                onClose={() => setShowSupport(false)}
+                API_BASE={API_BASE}
+                userEmail={user.email || 'user@example.com'}
             />
         </div>
     );

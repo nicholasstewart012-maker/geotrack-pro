@@ -17,6 +17,10 @@ try:
     user_count = db.query(database.User).count()
     print(f"User count: {user_count}")
     
+    # Check SupportTicket
+    ticket_count = db.query(database.SupportTicket).count()
+    print(f"SupportTicket table exists. Count: {ticket_count}")
+    
     db.close()
     print("Test Complete: SUCCESS")
     sys.exit(0)

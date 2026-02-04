@@ -26,6 +26,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+    allow_headers=["*"],
+)
+
+# Debugging: Catch global exceptions to print traceback in logs
+import traceback
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_msg = "".join(traceback.format_exception(None, exc, exc.__traceback__))
+    print(f"GLOBAL ERROR: {error_msg}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "traceback": error_msg},
+    )
+
+@app.on_event("startup")
+async def startup_event():
+    print("BACKEND STARTING UP...")
+    try:
+        from database import engine
+        print(f"Database URL configured (Is None? {os.getenv('DATABASE_URL') is None})")
+    except Exception as e:
+        print(f"Startup Import Error: {e}")
+
 @app.get("/health")
 def health_check():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}

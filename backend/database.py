@@ -81,7 +81,17 @@ class User(Base):
     full_name = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
 
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    print(f"Error creating database tables: {e}")
+    # Fallback to in-memory if we failed (likely read-only FS)
+    if "readonly" in str(e).lower() or "attempt to write a readonly database" in str(e).lower() or "permission denied" in str(e).lower() or "unable to open database" in str(e).lower():
+         print("Fallback to in-memory SQLite due to read-only filesystem")
+         # Re-create engine and session for in-memory
+         engine = create_engine("sqlite:///:memory:", **engine_args)
+         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+         Base.metadata.create_all(bind=engine)
 
 def get_db():
     db = SessionLocal()

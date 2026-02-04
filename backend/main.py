@@ -250,6 +250,18 @@ def health_check():
                 try:
                     user_count = db.query(db_mod.User).count()
                     health_status["user_count"] = user_count
+                    
+                    vehicle_count = db.query(db_mod.Vehicle).count()
+                    health_status["vehicle_count"] = vehicle_count
+                    
+                    # Debug first vehicle
+                    first_v = db.query(db_mod.Vehicle).first()
+                    if first_v:
+                        health_status["sample_vehicle"] = {
+                            "id": first_v.id,
+                            "name": first_v.name,
+                            "geotab_id": first_v.geotab_id
+                        }
                 except Exception as table_err:
                     health_status["table_error"] = str(table_err)
             except Exception as e:

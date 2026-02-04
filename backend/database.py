@@ -24,13 +24,16 @@ if is_sqlite:
 else:
     # OPTIMIZATION: Use NullPool for Vercel/Serverless
     # This prevents "SSL connection closed" errors by forcing a fresh connection every time.
-    # While this adds overhead, it is the only reliable way to handle Vercel's frozen state.
     engine_args["poolclass"] = NullPool
     
-    # Force SSL for Supabase (required for Transaction Pooler 6543)
+    # SSL Configuration with provided Certificate
+    # This addresses "SSL connection closed unexpectedly" errors
+    ssl_cert_path = os.path.join(os.path.dirname(__file__), "prod-ca-2021.crt")
+    
     engine_args["connect_args"] = {
         "connect_timeout": 10, 
-        "sslmode": "require"
+        "sslmode": "verify-full", # We have a cert, so we can verify full
+        "sslrootcert": ssl_cert_path
     }
 
 # Handle Vercel's read-only filesystem by using in-memory SQLite if no DATABASE_URL is provided

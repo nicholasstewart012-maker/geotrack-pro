@@ -30,6 +30,28 @@ app.add_middleware(
 def health_check():
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
 
+@app.on_event("startup")
+def startup_seed():
+    db = db_mod.SessionLocal()
+    try:
+        # Seed default admin if not exists
+        admin_email = "admin@geotrack.pro"
+        existing = db.query(db_mod.User).filter(db_mod.User.email == admin_email).first()
+        if not existing:
+            print(f"Seeding admin user: {admin_email}")
+            hashed_pw = get_password_hash("password123")
+            admin_user = db_mod.User(
+                email=admin_email, 
+                hashed_password=hashed_pw, 
+                full_name="Fleet Manager"
+            )
+            db.add(admin_user)
+            db.commit()
+    except Exception as e:
+        print(f"Startup seed error: {e}")
+    finally:
+        db.close()
+
 # Pydantic Schemas
 from pydantic import BaseModel
 

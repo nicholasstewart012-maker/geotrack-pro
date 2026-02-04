@@ -8,8 +8,16 @@ import database as db_mod
 # Security Check
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
+from dotenv import load_dotenv
+load_dotenv()
+
 def check_data():
-    print("🔍 Checking Database Content...")
+    print("🔍 Checking Environment...")
+    print(f"   CWD: {os.getcwd()}")
+    print(f"   Env File Exists? {os.path.exists('.env')}")
+    print(f"   RAW DATABASE_URL: {os.getenv('DATABASE_URL')}")
+
+    print("\n🔍 Checking Database Content...")
     try:
         db = db_mod.SessionLocal()
         

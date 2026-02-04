@@ -4,13 +4,44 @@ import sys
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import text # Import text for raw SQL
+from passlib.context import CryptContext
 
 # Ensure we can import database.py
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import database as db_mod
 
+# Security
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+
 # Data Generators
 VEHICLE_NAMES = ["Ford F-150 #101", "Chevy Silverado #102", "Ram 1500 #103", "Ford Transit #104", "Isuzu NPR #105"]
+TASKS = ["Oil Change", "Tire Rotation", "Brake Inspection", "Air Filter Replace", "Transmission Flush"]
+
+def seed_users(db: Session):
+    print("🌱 Seeding Users...")
+    users = [
+        {"email": "nicksstewart01@yahoo.com", "password": "Sniper012_", "name": "Nick Stewart"},
+        {"email": "dan@geotrack.pro", "password": "Password012_", "name": "Dan Geotrack"},
+        {"email": "admin@geotrack.pro", "password": "password123", "name": "Admin User"}
+    ]
+
+    for user in users:
+        existing = db.query(db_mod.User).filter(db_mod.User.email == user["email"]).first()
+        if existing:
+            print(f"   Skipping {user['email']} (already exists)")
+            continue
+        
+        hashed_pw = pwd_context.hash(user["password"])
+        new_user = db_mod.User(
+            email=user["email"],
+            hashed_password=hashed_pw,
+            full_name=user["name"],
+            is_active=True
+        )
+        db.add(new_user)
+    db.commit()
+
+def seed_vehicles(db: Session):
 TASKS = ["Oil Change", "Tire Rotation", "Brake Inspection", "Air Filter Replace", "Transmission Flush"]
 
 def seed_vehicles(db: Session):
@@ -104,6 +135,7 @@ def main():
         db.execute(text("SELECT 1"))
         print("✅ Connected!")
         
+        seed_users(db) # Seed users first
         vehicles = seed_vehicles(db)
         # Re-query valid vehicles to ensure they are bound
         vehicles = db.query(db_mod.Vehicle).all()

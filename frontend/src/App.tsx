@@ -23,7 +23,7 @@ const getApiBase = () => {
     // In production (Vercel), we want to use the relative /api path
     // which will be rewritten to the backend function
     if (import.meta.env.PROD || window.location.hostname !== 'localhost') {
-        return '/api';
+        return 'https://geotrack-pro.vercel.app/api';
     }
 
     // Default to local backend for development

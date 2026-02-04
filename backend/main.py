@@ -381,10 +381,29 @@ def register(user: UserCreate, db: Session = Depends(lambda: next(get_db_session
 
 @app.post("/auth/login", response_model=Token)
 def login(user: UserCreate, db: Session = Depends(lambda: next(get_db_session()))):
-    db_user = db.query(db_mod.User).filter(db_mod.User.email == user.email).first()
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    print(f"LOGIN ATTEMPT: {user.email}")
     
+    # Check what DB we are actually using
+    try:
+        db_name = db.bind.url.database
+        host = db.bind.url.host
+        print(f"LOGIN DB: {host}/{db_name}")
+    except:
+        print("LOGIN DB: Could not determine DB URL")
+
+    db_user = db.query(db_mod.User).filter(db_mod.User.email == user.email).first()
+    
+    if not db_user:
+        print("LOGIN FAIL: User not found in DB")
+        raise HTTPException(status_code=401, detail="User not found")
+        
+    if not verify_password(user.password, db_user.hashed_password):
+        print(f"LOGIN FAIL: Password mismatch for {user.email}")
+        # print(f"  Input: {user.password}")
+        # print(f"  Hash:  {db_user.hashed_password}")
+        raise HTTPException(status_code=401, detail="Password mismatch")
+    
+    print("LOGIN SUCCESS")
     access_token = create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 

@@ -17,6 +17,10 @@ import { LoginView } from './components/LoginView';
 import { ProfileSheet } from './components/ProfileSheet';
 
 const getApiBase = () => {
+    // If we provided an explicit API URL in environment variables (for Vercel/Production)
+    if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+
+    // Local fallback
     if (typeof window === 'undefined') return 'http://localhost:8081';
     return window.location.origin.includes(':5173')
         ? window.location.origin.replace(':5173', ':8081')

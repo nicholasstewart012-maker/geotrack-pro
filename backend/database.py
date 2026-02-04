@@ -21,20 +21,8 @@ is_sqlite = SQLALCHEMY_DATABASE_URL.startswith("sqlite")
 engine_args = {}
 if is_sqlite:
     engine_args["connect_args"] = {"check_same_thread": False}
-else:
-    # OPTIMIZATION: Use NullPool for Vercel/Serverless
-    # This prevents "SSL connection closed" errors by forcing a fresh connection every time.
-    engine_args["poolclass"] = NullPool
-    
-    # SSL Configuration with provided Certificate
-    # This addresses "SSL connection closed unexpectedly" errors
-    ssl_cert_path = os.path.join(os.path.dirname(__file__), "prod-ca-2021.crt")
-    
-    engine_args["connect_args"] = {
-        "connect_timeout": 10, 
-        "sslmode": "verify-full", # We have a cert, so we can verify full
-        "sslrootcert": ssl_cert_path
-    }
+
+# Handle Vercel's read-only filesystem by using in-memory SQLite if no DATABASE_URL is provided
 
 # Handle Vercel's read-only filesystem by using in-memory SQLite if no DATABASE_URL is provided
 if is_sqlite and "maintenance.db" in SQLALCHEMY_DATABASE_URL and os.environ.get("VERCEL"):

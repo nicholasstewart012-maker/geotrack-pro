@@ -367,6 +367,10 @@ def create_log(log: LogCreate, db: Session = Depends(lambda: next(get_db_session
 def get_vehicle_logs(vehicle_id: int, db: Session = Depends(lambda: next(get_db_session()))):
     return db.query(db_mod.MaintenanceLog).filter(db_mod.MaintenanceLog.vehicle_id == vehicle_id).order_by(db_mod.MaintenanceLog.performed_date.desc()).all()
 
+@app.get("/admin/logs/login")
+def get_login_logs(db: Session = Depends(lambda: next(get_db_session()))):
+    return db.query(db_mod.LoginLog).order_by(db_mod.LoginLog.login_time.desc()).limit(100).all()
+
 @app.get("/analytics/cost")
 def get_cost_analytics(db: Session = Depends(lambda: next(get_db_session()))):
     logs = db.query(db_mod.MaintenanceLog).all()
@@ -434,6 +438,20 @@ def login(user: UserCreate, db: Session = Depends(lambda: next(get_db_session())
         raise HTTPException(status_code=401, detail="Password mismatch")
     
     print("LOGIN SUCCESS")
+    
+    # Create Login Log
+    try:
+        log_entry = db_mod.LoginLog(
+            user_id=db_user.id,
+            email=db_user.email,
+            login_time=datetime.utcnow()
+        )
+        db.add(log_entry)
+        db.commit()
+    except Exception as e:
+        print(f"Failed to create login log: {e}")
+        # Don't fail the login just because logging failed
+
     access_token = create_access_token(data={"sub": db_user.email})
     return {"access_token": access_token, "token_type": "bearer"}
 

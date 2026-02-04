@@ -17,6 +17,8 @@ import { LoginView } from './components/LoginView';
 import { ProfileSheet } from './components/ProfileSheet';
 import { SecuritySheet } from './components/SecuritySheet';
 import { PreferencesSheet } from './components/PreferencesSheet';
+import { LoginLogsSheet } from './components/LoginLogsSheet';
+
 
 const getApiBase = () => {
     // If we provided an explicit API URL in environment variables
@@ -57,6 +59,7 @@ const App = () => {
     const [showProfile, setShowProfile] = useState(false);
     const [showSecurity, setShowSecurity] = useState(false);
     const [showPreferences, setShowPreferences] = useState(false);
+    const [showLoginLogs, setShowLoginLogs] = useState(false);
     const [user, setUser] = useState({ email: 'admin@geotrack.pro', full_name: 'Fleet Manager' });
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -428,17 +431,18 @@ const App = () => {
                             </button>
 
                             <div className="ios-card p-2 overflow-hidden">
-                                {['Notifications', 'Configurations', 'Support'].map((item, idx) => (
+                                {['Notifications', 'Configurations', 'Login Logs', 'Support'].map((item, idx) => (
                                     <button
                                         key={item}
                                         onClick={() => {
                                             if (item === 'Configurations') setShowSettings(true);
                                             if (item === 'Notifications') setShowNotifications(true);
+                                            if (item === 'Login Logs') setShowLoginLogs(true);
                                             if (item === 'Support') setShowSupport(true);
                                         }}
                                         className={cn(
                                             "w-full p-5 flex items-center justify-between tap-highlight-none active:bg-white/5 transition-colors",
-                                            idx < 2 && "border-b border-white/5"
+                                            idx < 3 && "border-b border-white/5"
                                         )}
                                     >
                                         <div className="flex items-center gap-4">
@@ -446,10 +450,12 @@ const App = () => {
                                                 "w-10 h-10 rounded-xl flex items-center justify-center",
                                                 item === 'Notifications' && "bg-ios-blue/10 text-ios-blue",
                                                 item === 'Configurations' && "bg-ios-amber/10 text-ios-amber",
+                                                item === 'Login Logs' && "bg-ios-green/10 text-ios-green",
                                                 item === 'Support' && "bg-ios-secondary/10 text-ios-secondary"
                                             )}>
                                                 {item === 'Notifications' && <Mail size={20} />}
                                                 {item === 'Configurations' && <Settings size={20} />}
+                                                {item === 'Login Logs' && <Shield size={20} />}
                                                 {item === 'Support' && <User size={20} />}
                                             </div>
                                             <span className="font-bold text-white">{item}</span>
@@ -571,6 +577,12 @@ const App = () => {
                 title="Preferences"
                 icon={Settings}
                 description="Customize your dashboard experience, notification frequency, and theme settings here soon."
+            />
+
+            <LoginLogsSheet
+                isOpen={showLoginLogs}
+                onClose={() => setShowLoginLogs(false)}
+                API_BASE={API_BASE}
             />
         </div>
     );

@@ -84,6 +84,15 @@ class User(Base):
     full_name = Column(String, nullable=True)
     is_active = Column(Boolean, default=True)
 
+class LoginLog(Base):
+    __tablename__ = "login_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    email = Column(String)
+    login_time = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User")
+
 try:
     Base.metadata.create_all(bind=engine)
 except Exception as e:

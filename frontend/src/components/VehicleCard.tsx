@@ -31,12 +31,12 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, index, onLogC
                     <div className="flex gap-2">
                         <div className={cn(
                             "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-black text-[10px] uppercase shadow-inner",
-                            vehicle.current_mileage % 5000 < 500
+                            vehicle.current_mileage % 5000 > 4500
                                 ? 'bg-ios-red/10 border-ios-red/20 text-ios-red animate-pulse'
                                 : 'bg-ios-green/10 border-ios-green/20 text-ios-green'
                         )}>
                             <Activity size={12} />
-                            {vehicle.current_mileage % 5000 < 500 ? 'Critical' : 'Healthy'}
+                            {vehicle.current_mileage % 5000 > 4500 ? 'Critical' : 'Healthy'}
                         </div>
 
                         <button
@@ -74,7 +74,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, index, onLogC
                             animate={{ width: `${(vehicle.current_mileage % 5000) / 50}%` }}
                             className={cn(
                                 "h-full rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]",
-                                vehicle.current_mileage % 5000 < 500 ? 'bg-ios-red' : 'bg-ios-blue'
+                                vehicle.current_mileage % 5000 > 4500 ? 'bg-ios-red' : 'bg-ios-blue'
                             )}
                         />
                     </div>

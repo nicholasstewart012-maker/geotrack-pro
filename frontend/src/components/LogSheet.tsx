@@ -23,6 +23,18 @@ export const LogSheet: React.FC<LogSheetProps> = ({
         notes: ''
     });
 
+    // Fix: Update log state when the vehicle prop changes
+    React.useEffect(() => {
+        if (vehicle) {
+            setLog(prev => ({
+                ...prev,
+                vehicle_id: vehicle.id,
+                performed_at_mileage: vehicle.current_mileage || 0,
+                performed_at_hours: vehicle.current_hours || 0
+            }));
+        }
+    }, [vehicle]);
+
     if (!vehicle) return null;
 
     return (

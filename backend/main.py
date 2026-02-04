@@ -118,8 +118,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 # 2. Safe Mode Middleware
 @app.middleware("http")
 async def check_safe_mode(request: Request, call_next):
-    if SAFE_MODE_ERROR:
-        return JSONResponse(status_code=500, content=SAFE_MODE_ERROR)
+    if SAFE_MODE_ERROR and request.url.path != "/api/health" and request.url.path != "/health":
+        return JSONResponse(status_code=503, content=SAFE_MODE_ERROR)
     return await call_next(request)
 
 # 3. CORS Middleware
@@ -196,6 +196,12 @@ class Token(BaseModel):
 
 @app.get("/health")
 def health_check():
+    if SAFE_MODE_ERROR:
+        return {
+            "status": "degraded", 
+            "mode": "SAFE_MODE", 
+            "error": SAFE_MODE_ERROR
+        }
     return {"status": "ok", "timestamp": datetime.now().isoformat()}
 
 # Helper for dependency injection

@@ -31,12 +31,14 @@ Session = None
 db_mod = None
 engine = None
 pwd_context = None
+pwd_context = None
 text = None
+joinedload = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global SAFE_MODE_ERROR
-    global jwt, CryptContext, Session, db_mod, engine, pwd_context, text
+    global jwt, CryptContext, Session, db_mod, engine, pwd_context, text, joinedload
     
     print("BACKEND STARTING UP...")
     try:
@@ -48,8 +50,9 @@ async def lifespan(app: FastAPI):
         from passlib.context import CryptContext as CC
         CryptContext = CC
         
-        from sqlalchemy.orm import Session as Sess
+        from sqlalchemy.orm import Session as Sess, sessionmaker, joinedload as joinedload_lib
         Session = Sess
+        joinedload = joinedload_lib
         
         import database as db_module
         db_mod = db_module
@@ -421,6 +424,27 @@ def get_cost_trend(db: Session = Depends(lambda: next(get_db_session()))):
         "labels": labels,
         "data": data
     }
+
+@app.get("/analytics/logs")
+def get_global_logs(db: Session = Depends(lambda: next(get_db_session()))):
+    # Fetch all logs, joined with Vehicle to get names
+    logs = db.query(db_mod.MaintenanceLog).options(
+        joinedload(db_mod.MaintenanceLog.vehicle)
+    ).order_by(db_mod.MaintenanceLog.performed_date.desc()).all()
+    
+    # Custom serialization to include vehicle name
+    result = []
+    for log in logs:
+        result.append({
+            "id": log.id,
+            "vehicle_id": log.vehicle_id,
+            "vehicle_name": log.vehicle.name if log.vehicle else "Unknown",
+            "task_name": log.task_name,
+            "performed_date": log.performed_date,
+            "cost": log.cost,
+            "performed_at_mileage": log.performed_at_mileage
+        })
+    return result
 
 @app.get("/settings/all")
 def get_all_settings(db: Session = Depends(lambda: next(get_db_session()))):

@@ -71,6 +71,8 @@ class MaintenanceLog(Base):
     cost = Column(Float, default=0.0)
     notes = Column(String, nullable=True)
 
+    vehicle = relationship("Vehicle")
+
 class Setting(Base):
     __tablename__ = "settings"
     key = Column(String, primary_key=True)

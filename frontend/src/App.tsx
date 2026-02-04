@@ -18,6 +18,7 @@ import { ProfileSheet } from './components/ProfileSheet';
 import { SecuritySheet } from './components/SecuritySheet';
 import { PreferencesSheet } from './components/PreferencesSheet';
 import { LoginLogsSheet } from './components/LoginLogsSheet';
+import { GlobalHistorySheet } from './components/GlobalHistorySheet';
 
 
 const getApiBase = () => {
@@ -60,6 +61,7 @@ const App = () => {
     const [showSecurity, setShowSecurity] = useState(false);
     const [showPreferences, setShowPreferences] = useState(false);
     const [showLoginLogs, setShowLoginLogs] = useState(false);
+    const [showGlobalHistory, setShowGlobalHistory] = useState(false);
     const [user, setUser] = useState({ email: 'admin@geotrack.pro', full_name: 'Fleet Manager' });
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -412,11 +414,17 @@ const App = () => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="ios-card p-6 border-l-4 border-l-ios-amber/50">
+                                    <div
+                                        onClick={() => setShowGlobalHistory(true)}
+                                        className="ios-card p-6 border-l-4 border-l-ios-amber/50 active:scale-95 transition-transform cursor-pointer"
+                                    >
                                         <p className="text-[10px] font-black text-ios-secondary uppercase tracking-widest mb-1">Maint. Cost</p>
                                         <h4 className="text-2xl font-black text-white">${stats.total_maintenance_cost.toLocaleString()}</h4>
                                     </div>
-                                    <div className="ios-card p-6 border-l-4 border-l-ios-green/50">
+                                    <div
+                                        onClick={() => setShowGlobalHistory(true)}
+                                        className="ios-card p-6 border-l-4 border-l-ios-green/50 active:scale-95 transition-transform cursor-pointer"
+                                    >
                                         <p className="text-[10px] font-black text-ios-secondary uppercase tracking-widest mb-1">Total Logs</p>
                                         <h4 className="text-3xl font-black text-white">{stats.count}</h4>
                                     </div>
@@ -593,6 +601,12 @@ const App = () => {
             <LoginLogsSheet
                 isOpen={showLoginLogs}
                 onClose={() => setShowLoginLogs(false)}
+                API_BASE={API_BASE}
+            />
+
+            <GlobalHistorySheet
+                isOpen={showGlobalHistory}
+                onClose={() => setShowGlobalHistory(false)}
                 API_BASE={API_BASE}
             />
         </div>

@@ -56,6 +56,7 @@ class MaintenanceSchedule(Base):
     alert_thresholds = Column(String) # comma-separated
     last_performed_value = Column(Float, default=0.0)
     last_performed_date = Column(DateTime, default=datetime.utcnow)
+    last_alerted_at = Column(DateTime, nullable=True) # Prevent spamming
     is_active = Column(Boolean, default=True)
 
     vehicle = relationship("Vehicle", back_populates="schedules")

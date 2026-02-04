@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 import database as db_mod
+import email_utils
 
 # Load environment variables
 load_dotenv()
@@ -71,6 +72,64 @@ def sync_vehicles(api, db: Session):
     except Exception as e:
         print(f"❌ Error syncing vehicles: {e}")
         db.rollback()
+
+def check_maintenance_alerts(db: Session):
+    """Check if any vehicles are due for maintenance and send alerts"""
+    print("🔍 Checking Maintenance Alerts...")
+    schedules = db.query(db_mod.MaintenanceSchedule)\
+                  .join(db_mod.Vehicle)\
+                  .filter(db_mod.MaintenanceSchedule.is_active == True).all()
+
+    for schedule in schedules:
+        vehicle = schedule.vehicle
+        if not vehicle: continue
+
+        is_due = False
+        current_val = 0
+        due_val = 0
+        
+        # 1. Check Logic
+        if schedule.tracking_type == "miles":
+            current_val = vehicle.current_mileage
+            due_val = schedule.last_performed_value + schedule.interval_value
+            if current_val >= due_val:
+                is_due = True
+        
+        elif schedule.tracking_type == "hours":
+            current_val = vehicle.current_hours
+            due_val = schedule.last_performed_value + schedule.interval_value
+            if current_val >= due_val:
+                is_due = True
+                
+        # 2. Alert Logic
+        if is_due:
+            # Check cooldown (don't spam - alert once per 24h for same issue)
+            if schedule.last_alerted_at:
+                cutoff = datetime.utcnow() - timedelta(hours=24)
+                if schedule.last_alerted_at > cutoff:
+                    continue # Already alerted recently
+            
+            # Send Email
+            subject = f"Maintenance Alert: {vehicle.name} - {schedule.task_name}"
+            body = f"""
+            Maintenance Alert
+            -----------------
+            Vehicle: {vehicle.name}
+            Task: {schedule.task_name}
+            
+            Current Usage: {current_val} {schedule.tracking_type}
+            Due At: {due_val} {schedule.tracking_type}
+            Overdue By: {round(current_val - due_val, 1)} {schedule.tracking_type}
+            
+            Please schedule service soon.
+            """
+            
+            print(f"   ⚠️ sending alert for {vehicle.name}...")
+            success = email_utils.send_email_notification(subject, body)
+            
+            if success:
+                schedule.last_alerted_at = datetime.utcnow()
+                db.commit()
 
 def sync_status_data(api, db: Session):
     """Fetch odometer and engine hours"""
@@ -140,6 +199,7 @@ def main():
             db = db_mod.SessionLocal()
             sync_vehicles(api, db)
             sync_status_data(api, db)
+            check_maintenance_alerts(db)
             db.close()
         except Exception as e:
             print(f"❌ Database Connection Failed: {e}")

@@ -18,8 +18,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+
 # --- CONFIGURATION ---
 SECRET_KEY = os.getenv("SECRET_KEY", "change_this_to_a_secure_random_string")
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASS = os.getenv("EMAIL_PASS")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -580,9 +587,92 @@ def export_logs_csv(db: Session = Depends(lambda: next(get_db_session()))):
         
     output.seek(0)
     
-    response = StreamingResponse(iter([output.getvalue()]), media_type="text/csv")
-    response.headers["Content-Disposition"] = "attachment; filename=maintenance_logs_export.csv"
-    return response
+    filename = f"maintenance_export_{datetime.now().strftime('%Y%m%d')}.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+def send_email_notification(ticket: db_mod.SupportTicket, attachment_path: Optional[str] = None):
+    """Sends an email notification via Gmail SMTP."""
+    if not EMAIL_USER or not EMAIL_PASS:
+        print("WARNING: Email credentials not set. Skipping email.")
+        return
+
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_USER
+        msg['To'] = EMAIL_USER
+        msg['Subject'] = f"New Support Ticket: {ticket.issue_type}"
+
+        body = f"""
+        New Support Ticket Received
+        ---------------------------
+        User: {ticket.user_email}
+        Issue: {ticket.issue_type}
+        Impact: {ticket.impact_count}
+        
+        Description:
+        {ticket.description}
+        """
+        msg.attach(MIMEText(body, 'plain'))
+
+        if attachment_path and os.path.exists(attachment_path):
+            with open(attachment_path, "rb") as f:
+                part = MIMEApplication(f.read(), Name=os.path.basename(attachment_path))
+            part['Content-Disposition'] = f'attachment; filename="{os.path.basename(attachment_path)}"'
+            msg.attach(part)
+
+        # Connect to Gmail SMTP
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(EMAIL_USER, EMAIL_PASS)
+            server.send_message(msg)
+            
+        print(f"SUCCESS: Email sent to {EMAIL_USER}")
+
+    except Exception as e:
+        print(f"ERROR: Failed to send email: {e}")
+        # Don't raise, just log. We don't want to fail the request if email fails.
+
+@app.post("/support/submit")
+async def submit_support_ticket(
+    issue_type: str = Form(...),
+    impact_count: str = Form(...),
+    description: str = Form(...),
+    user_email: str = Form(...),
+    attachment: UploadFile = File(None),
+    db: Session = Depends(lambda: next(get_db_session()))
+):
+    print(f"Received Support Ticket from {user_email}")
+    
+    file_path = None
+    if attachment:
+        upload_dir = "uploads"
+        os.makedirs(upload_dir, exist_ok=True)
+        filename = f"{datetime.now().timestamp()}_{attachment.filename}"
+        file_path = os.path.join(upload_dir, filename)
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(attachment.file, buffer)
+            
+    # Save to DB
+    ticket = db_mod.SupportTicket(
+        user_email=user_email,
+        issue_type=issue_type,
+        impact_count=impact_count,
+        description=description,
+        attachment_filename=file_path
+    )
+    db.add(ticket)
+    db.commit()
+    db.refresh(ticket)
+    
+    # Send Email
+    send_email_notification(ticket, file_path)
+
+    return {"status": "success", "ticket_id": ticket.id}
 
 @app.get("/analytics/logs")
 def get_global_logs(db: Session = Depends(lambda: next(get_db_session()))):

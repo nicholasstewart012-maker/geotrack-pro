@@ -22,7 +22,6 @@ engine_args = {}
 if is_sqlite:
     engine_args["connect_args"] = {"check_same_thread": False}
 else:
-else:
     # OPTIMIZATION: Use NullPool for Vercel/Serverless
     # This prevents "SSL connection closed" errors by forcing a fresh connection every time.
     # While this adds overhead, it is the only reliable way to handle Vercel's frozen state.

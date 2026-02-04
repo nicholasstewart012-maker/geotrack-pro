@@ -8,9 +8,28 @@ interface PreferencesSheetProps {
 }
 
 export const PreferencesSheet: React.FC<PreferencesSheetProps> = ({ isOpen, onClose }) => {
-    const [darkMode, setDarkMode] = useState(true);
-    const [notifications, setNotifications] = useState(true);
-    const [sound, setSound] = useState(true);
+    // Helper to get initial state from localStorage or default
+    const getStoredState = (key: string, defaultValue: boolean) => {
+        const stored = localStorage.getItem(key);
+        return stored ? JSON.parse(stored) : defaultValue;
+    };
+
+    const [darkMode, setDarkMode] = useState(() => getStoredState('pref_darkMode', true));
+    const [notifications, setNotifications] = useState(() => getStoredState('pref_notifications', true));
+    const [sound, setSound] = useState(() => getStoredState('pref_sound', true));
+
+    // Persist changes
+    React.useEffect(() => {
+        localStorage.setItem('pref_darkMode', JSON.stringify(darkMode));
+    }, [darkMode]);
+
+    React.useEffect(() => {
+        localStorage.setItem('pref_notifications', JSON.stringify(notifications));
+    }, [notifications]);
+
+    React.useEffect(() => {
+        localStorage.setItem('pref_sound', JSON.stringify(sound));
+    }, [sound]);
 
     return (
         <AnimatePresence>

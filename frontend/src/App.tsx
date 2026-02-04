@@ -654,13 +654,7 @@ const App = () => {
                 description="We're building a real-time alert engine to keep you informed of critical fleet events. Coming soon!"
             />
 
-            <SimpleSheet
-                isOpen={showSupport}
-                onClose={() => setShowSupport(false)}
-                title="Support"
-                icon={User}
-                description="Need help? Our enterprise support team is just a tap away. Implementation in progress."
-            />
+
 
             <SimpleSheet
                 isOpen={showSecurity}

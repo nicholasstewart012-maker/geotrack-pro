@@ -73,11 +73,33 @@ const App = () => {
         const token = localStorage.getItem('token');
         if (token) {
             setIsAuthenticated(true);
+            fetchUser(); // Fetch user details immediately
         }
         fetchVehicles();
         fetchSettings();
         fetchStats();
     }, []);
+
+    const fetchUser = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const res = await fetch(`${API_BASE}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const userData = await res.json();
+                setUser(userData);
+            } else {
+                // If token invalid, maybe logout? For now just ignore
+                console.error("Failed to fetch user profile");
+            }
+        } catch (err) {
+            console.error("Error fetching user", err);
+        }
+    };
 
     const fetchStats = async () => {
         try {
@@ -179,6 +201,7 @@ const App = () => {
             const data = await response.json();
             localStorage.setItem('token', data.access_token);
             setIsAuthenticated(true);
+            fetchUser(); // Fetch user details
             fetchVehicles();
             fetchSettings();
         } catch (err: any) {

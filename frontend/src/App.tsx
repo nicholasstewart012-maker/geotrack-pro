@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings, BarChart3, Truck,
-    Plus, Gauge, RefreshCw, User, Mail, ChevronRight, Shield
+    Plus, Gauge, RefreshCw, User, Mail, ChevronRight, Shield, Fuel, Wrench, Menu as MenuIcon, AlertTriangle, ShieldCheck, Download, Activity
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { VehicleCard } from './components/VehicleCard';
@@ -75,7 +76,9 @@ const App = () => {
         admin_email: ''
     });
     const [stats, setStats] = useState({ total_maintenance_cost: 0, count: 0 });
+    const [healthIndex, setHealthIndex] = useState({ health_index: 100, vehicles_in_shop_last_30d: 0 });
     const [costTrend, setCostTrend] = useState<{ labels: string[], data: number[] }>({ labels: [], data: [] });
+    const [trendPeriod, setTrendPeriod] = useState("6M");
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -109,19 +112,54 @@ const App = () => {
         }
     };
 
+    const fetchTrend = async (period: string) => {
+        try {
+            const res = await fetch(`${API_BASE}/analytics/cost-trend?period=${period}`);
+            if (res.ok) {
+                const data = await res.json();
+                setCostTrend(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch trend", err);
+        }
+    };
+
+    const fetchHealth = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/analytics/health`);
+            if (res.ok) {
+                const data = await res.json();
+                setHealthIndex(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch health", err);
+        }
+    };
+
+    const handlePeriodChange = (period: string) => {
+        setTrendPeriod(period);
+        fetchTrend(period);
+    };
+
+    const handleExport = () => {
+        window.location.href = `${API_BASE} /analytics/export`;
+    };
+
+    const toggleProfile = () => {
+        setShowProfile(prev => !prev);
+    };
+
     const fetchStats = async () => {
         try {
-            const res = await fetch(`${API_BASE}/analytics/cost`);
+            const res = await fetch(`${API_BASE} /analytics/cost`);
             if (res.ok) {
                 const data = await res.json();
                 setStats(data);
             }
 
-            const trendRes = await fetch(`${API_BASE}/analytics/cost-trend`);
-            if (trendRes.ok) {
-                const trendData = await trendRes.json();
-                setCostTrend(trendData);
-            }
+            await fetchTrend(trendPeriod);
+            await fetchHealth();
+
         } catch (err) {
             console.error("Failed to fetch stats", err);
         }
@@ -129,7 +167,7 @@ const App = () => {
 
     const fetchSettings = async () => {
         try {
-            const res = await fetch(`${API_BASE}/settings/all`); // Need to add this endpoint or handle dict
+            const res = await fetch(`${API_BASE} /settings/all`); // Need to add this endpoint or handle dict
             if (res.ok) {
                 const data = await res.json();
                 setSettings(prev => ({ ...prev, ...data }));
@@ -377,39 +415,74 @@ const App = () => {
 
                                 {/* Performance Ring */}
                                 <div className="ios-card p-10 flex flex-col items-center gap-4 text-center">
-                                    <div className="w-32 h-32 rounded-full border-[8px] border-white/5 flex items-center justify-center relative">
-                                        <svg className="absolute inset-0 w-full h-full -rotate-90">
-                                            <circle cx="64" cy="64" r="56" fill="transparent" stroke="rgba(10, 132, 255, 0.4)" strokeWidth="8" />
-                                            <circle cx="64" cy="64" r="56" fill="transparent" stroke="#0A84FF" strokeWidth="8" strokeDasharray="351.8" strokeDashoffset="50" strokeLinecap="round" />
+                                    <div className="relative w-40 h-40">
+                                        <svg className="w-full h-full" viewBox="0 0 160 160">
+                                            <circle cx="80" cy="80" r="70" fill="transparent" stroke="rgba(255,255,255,0.1)" strokeWidth="15" />
+                                            <motion.circle
+                                                cx="80"
+                                                cy="80"
+                                                r="70"
+                                                stroke="currentColor"
+                                                strokeWidth="15"
+                                                fill="transparent"
+                                                className={healthIndex.health_index > 80 ? "text-ios-green" : healthIndex.health_index > 50 ? "text-ios-amber" : "text-ios-red"}
+                                                strokeDasharray={440}
+                                                strokeDashoffset={440 - (440 * healthIndex.health_index) / 100}
+                                                strokeLinecap="round"
+                                                initial={{ strokeDashoffset: 440 }}
+                                                animate={{ strokeDashoffset: 440 - (440 * healthIndex.health_index) / 100 }}
+                                                transition={{ duration: 1.5, ease: "easeOut" }}
+                                            />
                                         </svg>
-                                        <h3 className="text-4xl font-black text-white">88<span className="text-lg text-ios-secondary">%</span></h3>
+                                        <div className="absolute inset-0 flex items-center justify-center pt-2">
+                                            <span className="text-4xl font-black text-white">{healthIndex.health_index}<span className="text-2xl">%</span></span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-xs font-black text-ios-secondary uppercase tracking-[0.1em]">Core Health Index</p>
-                                    </div>
+                                    <p className="text-[10px] font-black text-ios-secondary uppercase tracking-widest mt-4">Core Health Index</p>
                                 </div>
 
-                                {/* Real SVG Chart */}
-                                <div className="ios-card p-6 space-y-6">
-                                    <div className="flex justify-between items-start">
-                                        <p className="text-[10px] font-black text-ios-secondary uppercase tracking-widest">Maintenance Cost Trend</p>
-                                    </div>
-                                    <div className="h-40 w-full">
-                                        <LineChart
-                                            data={costTrend.data.length > 0 ? costTrend.data : [0, 0, 0, 0, 0, 0]}
-                                            labels={costTrend.labels}
-                                        />
-                                    </div>
-                                    <div className="flex justify-between text-[8px] font-black text-ios-secondary uppercase px-4">
-                                        {costTrend.labels.length > 0 ? (
-                                            <>
-                                                <span>{costTrend.labels[0]}</span>
-                                                <span>{costTrend.labels[Math.floor(costTrend.labels.length / 2)]}</span>
-                                                <span>{costTrend.labels[costTrend.labels.length - 1]}</span>
-                                            </>
-                                        ) : (
-                                            <span>No Data</span>
-                                        )}
+                                {/* Cost Trend Chart */}
+                                <div className="md:col-span-2">
+                                    <div className="ios-card p-6 space-y-4 h-full flex flex-col">
+                                        <div className="flex justify-between items-center">
+                                            <p className="text-[10px] font-black text-ios-secondary uppercase tracking-widest">Maintenance Cost Trend</p>
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={handleExport} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-ios-blue transition-colors">
+                                                    <Download size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-1 bg-black/20 p-1 rounded-lg w-fit">
+                                            {['1W', '1M', '3M', '6M', '1Y'].map((p) => (
+                                                <button
+                                                    key={p}
+                                                    onClick={() => handlePeriodChange(p)}
+                                                    className={`px-3 py-1 text-[10px] font-black rounded-md transition-colors ${trendPeriod === p ? 'bg-ios-blue text-white' : 'text-ios-secondary hover:text-white'
+                                                        }`}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <div className="flex-1 w-full min-h-[160px]">
+                                            <LineChart
+                                                data={costTrend.data.length > 0 ? costTrend.data : [0, 0, 0, 0, 0, 0]}
+                                                labels={costTrend.labels}
+                                            />
+                                        </div>
+                                        <div className="flex justify-between text-[8px] font-black text-ios-secondary uppercase px-4">
+                                            {costTrend.labels.length > 0 ? (
+                                                <>
+                                                    <span>{costTrend.labels[0]}</span>
+                                                    <span>{costTrend.labels[Math.floor(costTrend.labels.length / 2)]}</span>
+                                                    <span>{costTrend.labels[costTrend.labels.length - 1]}</span>
+                                                </>
+                                            ) : (
+                                                <span>No Data</span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 

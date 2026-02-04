@@ -11,7 +11,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # Third-party imports
 from fastapi import FastAPI, Depends, HTTPException, Request, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
@@ -380,50 +380,155 @@ def get_cost_analytics(db: Session = Depends(lambda: next(get_db_session()))):
     total = sum(log.cost for log in logs)
     return {"total_maintenance_cost": total, "count": len(logs)}
 
-@app.get("/analytics/cost-trend")
-def get_cost_trend(db: Session = Depends(lambda: next(get_db_session()))):
-    from collections import defaultdict
-    # 1. Get logs from last 12 months
-    # For now, just getting all logs and aggregating, as volume is low
-    logs = db.query(db_mod.MaintenanceLog).all()
-    
-    # 2. Bucket by Month (YYYY-MM)
-    monthly_data = defaultdict(float)
-    
-    # Pre-fill last 6 months so we don't have gaps
-    today = datetime.utcnow()
-    for i in range(5, -1, -1):
-        d = today - timedelta(days=30*i)
-        key = d.strftime("%b") # Jan, Feb, etc.
-        monthly_data[key] = 0.0
-        
-    # Aggregate actual data
-    for log in logs:
-        if log.performed_date:
-            month_key = log.performed_date.strftime("%b")
-            monthly_data[month_key] += log.cost
-            
-    # 3. Format for Chart
-    # Ensure chronological order by iterating through the pre-calc keys if we used that method, 
-    # but since dictionary order is insertion-based in Py3.7+, we might need to be careful if data is old.
-    # Let's simple-sort by using a fixed list of last 6 months names
-    
-    labels = []
-    data = []
-    
-    # Regenerate the ordered list of last 6 months
-    for i in range(5, -1, -1):
-        # Approximation of months
-        d = today - timedelta(days=30*i)
-        month_name = d.strftime("%b")
-        if month_name not in labels: # Avoid dupes if days=30 logic overlaps slightly
-            labels.append(month_name)
-            data.append(monthly_data[month_name])
-            
     return {
         "labels": labels,
         "data": data
     }
+
+@app.get("/analytics/health")
+def get_health_index(db: Session = Depends(lambda: next(get_db_session()))):
+    # Core Health Index = (Total Vehicles - Vehicles with Maint in last 30d) / Total Vehicles
+    total_vehicles = db.query(db_mod.Vehicle).count()
+    if total_vehicles == 0:
+        return {"health_index": 100, "detail": "No vehicles"}
+        
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    
+    # Count unique vehicles that had maintenance
+    # distinct(MaintenanceLog.vehicle_id)
+    unique_maint_vehicles = db.query(db_mod.MaintenanceLog.vehicle_id)\
+        .filter(db_mod.MaintenanceLog.performed_date >= thirty_days_ago)\
+        .distinct().count()
+        
+    healthy_vehicles = total_vehicles - unique_maint_vehicles
+    health_index = int((healthy_vehicles / total_vehicles) * 100)
+    
+    return {
+        "health_index": health_index,
+        "total_vehicles": total_vehicles,
+        "vehicles_in_shop_last_30d": unique_maint_vehicles
+    }
+
+@app.get("/analytics/cost-trend")
+def get_cost_trend(period: str = "6M", db: Session = Depends(lambda: next(get_db_session()))):
+    from collections import defaultdict
+    
+    # Periods: 1W, 1M, 3M, 6M, 1Y, ALL
+    today = datetime.utcnow()
+    start_date = today
+    
+    if period == "1W":
+        start_date = today - timedelta(days=7)
+        bucket_format = "%a" # Mon, Tue
+        delta_step = timedelta(days=1)
+        step_count = 7
+    elif period == "1M":
+        start_date = today - timedelta(days=30)
+        bucket_format = "%d" # 01, 02 (Day of month)
+        delta_step = timedelta(days=1)
+        step_count = 30
+    elif period == "3M":
+        start_date = today - timedelta(days=90)
+        bucket_format = "W%W" # Week number
+        delta_step = timedelta(weeks=1)
+        step_count = 12
+    elif period == "1Y":
+        start_date = today - timedelta(days=365)
+        bucket_format = "%b" # Jan, Feb
+        delta_step = timedelta(days=30)
+        step_count = 12
+    else: # 6M or default
+        start_date = today - timedelta(days=180)
+        bucket_format = "%b"
+        delta_step = timedelta(days=30)
+        step_count = 6
+        
+    logs = db.query(db_mod.MaintenanceLog).filter(db_mod.MaintenanceLog.performed_date >= start_date).all()
+    
+    # bucket
+    data_map = defaultdict(float)
+    
+    # Pre-fill
+    # This pre-fill logic is a bit simplistic for variable months but works for charts
+    # A better way for pre-fill is iterating from start_date to today
+    
+    cursor = start_date
+    labels = []
+    
+    # Generate labels strictly
+    if period in ["1W", "1M"]:
+        # Daily iteration
+        curr = start_date
+        while curr <= today:
+            lbl = curr.strftime(bucket_format)
+            data_map[lbl] = 0.0
+            if lbl not in labels: labels.append(lbl)
+            curr += timedelta(days=1)
+    elif period == "3M":
+         # Weekly iteration
+        curr = start_date
+        while curr <= today:
+            lbl = curr.strftime(bucket_format)
+            data_map[lbl] = 0.0
+            if lbl not in labels: labels.append(lbl)
+            curr += timedelta(days=7)           
+    else:
+        # Monthly iteration (approx)
+        for i in range(step_count -1, -1, -1):
+            d = today - (delta_step * i)
+            lbl = d.strftime(bucket_format)
+            data_map[lbl] = 0.0
+            if lbl not in labels: labels.append(lbl)
+
+    # Aggregate
+    for log in logs:
+        if log.performed_date:
+            key = log.performed_date.strftime(bucket_format)
+            data_map[key] += log.cost
+            
+    # Build result
+    result_data = [data_map[lbl] for lbl in labels]
+            
+    return {
+        "labels": labels,
+        "data": result_data,
+        "period": period
+    }
+
+@app.get("/analytics/export")
+def export_logs_csv(db: Session = Depends(lambda: next(get_db_session()))):
+    import csv
+    from io import StringIO
+    
+    # Fetch all logs for export
+    logs = db.query(db_mod.MaintenanceLog).options(
+        joinedload(db_mod.MaintenanceLog.vehicle)
+    ).order_by(db_mod.MaintenanceLog.performed_date.desc()).all()
+    
+    # Create CSV in memory
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Headers
+    writer.writerow(['ID', 'Vehicle', 'Task', 'Date', 'Cost', 'Mileage', 'Notes'])
+    
+    # Rows
+    for log in logs:
+        writer.writerow([
+            log.id,
+            log.vehicle.name if log.vehicle else "Unknown",
+            log.task_name,
+            log.performed_date.strftime("%Y-%m-%d"),
+            f"{log.cost:.2f}",
+            log.performed_at_mileage,
+            log.notes or ""
+        ])
+        
+    output.seek(0)
+    
+    response = StreamingResponse(iter([output.getvalue()]), media_type="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=maintenance_logs_export.csv"
+    return response
 
 @app.get("/analytics/logs")
 def get_global_logs(db: Session = Depends(lambda: next(get_db_session()))):

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Truck } from 'lucide-react';
+import { Activity, Truck, Trash2 } from 'lucide-react';
 import { cn, formatMileage } from '../lib/utils';
 
 interface VehicleCardProps {
@@ -8,15 +8,16 @@ interface VehicleCardProps {
     index: number;
     onLogClick: () => void;
     onHistoryClick: () => void;
+    onDelete: () => void;
 }
 
-export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, index, onLogClick, onHistoryClick }) => {
+export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, index, onLogClick, onHistoryClick, onDelete }) => {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="ios-card overflow-hidden"
+            className="ios-card overflow-hidden relative group"
         >
             <div className="p-5 space-y-4">
                 <div className="flex justify-between items-start">
@@ -26,15 +27,29 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, index, onLogC
                             {vehicle.vin || 'VIN NOT SET'}
                         </span>
                     </div>
-                    <div className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-black text-[10px] uppercase shadow-inner",
-                        vehicle.current_mileage % 5000 < 500
-                            ? 'bg-ios-red/10 border-ios-red/20 text-ios-red animate-pulse'
-                            : 'bg-ios-green/10 border-ios-green/20 text-ios-green'
-                    )}>
-                        <Activity size={12} />
-                        {vehicle.current_mileage % 5000 < 500 ? 'Critical' : 'Healthy'}
+
+                    <div className="flex gap-2">
+                        <div className={cn(
+                            "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-black text-[10px] uppercase shadow-inner",
+                            vehicle.current_mileage % 5000 < 500
+                                ? 'bg-ios-red/10 border-ios-red/20 text-ios-red animate-pulse'
+                                : 'bg-ios-green/10 border-ios-green/20 text-ios-green'
+                        )}>
+                            <Activity size={12} />
+                            {vehicle.current_mileage % 5000 < 500 ? 'Critical' : 'Healthy'}
+                        </div>
+
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete();
+                            }}
+                            className="w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center active:scale-90 transition-all hover:bg-red-500/20"
+                        >
+                            <Trash2 size={14} />
+                        </button>
                     </div>
+
                 </div>
 
                 <div className="flex gap-3">

@@ -14,7 +14,10 @@ import { VehicleSkeleton } from './components/VehicleSkeleton';
 import { HistorySheet } from './components/HistorySheet';
 import { LineChart } from './components/LineChart';
 import { LoginView } from './components/LoginView';
+import { LoginView } from './components/LoginView';
 import { ProfileSheet } from './components/ProfileSheet';
+import { SecuritySheet } from './components/SecuritySheet';
+import { PreferencesSheet } from './components/PreferencesSheet';
 
 const getApiBase = () => {
     // If we provided an explicit API URL in environment variables
@@ -448,6 +451,17 @@ const App = () => {
                     setShowPreferences(true);
                 }}
                 user={user}
+            />
+
+            <SecuritySheet
+                isOpen={showSecurity}
+                onClose={() => setShowSecurity(false)}
+                API_BASE={API_BASE}
+            />
+
+            <PreferencesSheet
+                isOpen={showPreferences}
+                onClose={() => setShowPreferences(false)}
             />
 
             <EnrollmentSheet

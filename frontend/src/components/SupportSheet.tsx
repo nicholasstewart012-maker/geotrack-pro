@@ -72,9 +72,10 @@ export const SupportSheet: React.FC<SupportSheetProps> = ({ isOpen, onClose, API
                     <motion.div
                         initial={{ y: "100%" }}
                         animate={{ y: 0 }}
-                        exit={{ y: "100%" }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed inset-x-0 bottom-0 h-[85vh] bg-[#1c1c1e] rounded-t-[32px] overflow-hidden z-50 flex flex-col"
+                        className="fixed z-50 flex flex-col bg-[#1c1c1e] overflow-hidden
+                            inset-x-0 bottom-0 h-[85vh] rounded-t-[32px]
+                            md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md md:h-auto md:max-h-[85vh] md:rounded-[32px] md:shadow-2xl"
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 bg-[#1c1c1e] shrink-0">

@@ -31,11 +31,12 @@ Session = None
 db_mod = None
 engine = None
 pwd_context = None
+text = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global SAFE_MODE_ERROR
-    global jwt, CryptContext, Session, db_mod, engine, pwd_context
+    global jwt, CryptContext, Session, db_mod, engine, pwd_context, text
     
     print("BACKEND STARTING UP...")
     try:
@@ -55,7 +56,8 @@ async def lifespan(app: FastAPI):
         from database import engine as db_engine
         engine = db_engine
         
-        from sqlalchemy import text # Import text for raw SQL
+        from sqlalchemy import text as s_text # Import text for raw SQL
+        text = s_text
 
         # Initialize Security Context
         pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")

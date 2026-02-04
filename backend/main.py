@@ -362,6 +362,17 @@ def create_log(log: LogCreate, db: Session = Depends(lambda: next(get_db_session
     db_log = db_mod.MaintenanceLog(**data)
     db.add(db_log)
     
+    
+    # Update Vehicle Odometer/Hours if higher
+    vehicle = db.query(db_mod.Vehicle).filter(db_mod.Vehicle.id == log.vehicle_id).first()
+    if vehicle:
+        # We trust manual logs if they are higher than current (Geotab sync will catch up or confirm)
+        if log.performed_at_mileage > vehicle.current_mileage:
+            vehicle.current_mileage = log.performed_at_mileage
+        if log.performed_at_hours > vehicle.current_hours:
+            vehicle.current_hours = log.performed_at_hours
+
+    # Update Schedule
     schedule = db.query(db_mod.MaintenanceSchedule).filter(
         db_mod.MaintenanceSchedule.vehicle_id == log.vehicle_id,
         db_mod.MaintenanceSchedule.task_name == log.task_name

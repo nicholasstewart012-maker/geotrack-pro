@@ -18,6 +18,12 @@ def check_data():
         db_name = db.bind.url.database
         print(f"✅ Database Connected: {db_name}")
         
+        if "maintenance.db" in str(db_name) or "sqlite" in str(db.bind.url.drivername):
+            print("\n⚠️  WARNING: YOU ARE USING SQLITE (LOCAL FILE) INSTEAD OF POSTGRES!")
+            print("    The Cloud cannot see this data.")
+            print("    Please check your .env file on this computer.")
+            print("    It should say: DATABASE_URL=postgresql://postgres:Password012_@localhost:5432/postgres\n")
+        
         # 2. Check Users
         users = db.query(db_mod.User).all()
         print(f"\n👥 Users found: {len(users)}")

@@ -168,7 +168,7 @@ const App = () => {
 
     const fetchSettings = async () => {
         try {
-            const res = await fetch(`${API_BASE} /settings/all`); // Need to add this endpoint or handle dict
+            const res = await fetch(`${API_BASE}/settings/all`); // Need to add this endpoint or handle dict
             if (res.ok) {
                 const data = await res.json();
                 setSettings(prev => ({ ...prev, ...data }));

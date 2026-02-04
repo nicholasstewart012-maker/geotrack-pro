@@ -14,7 +14,6 @@ import { VehicleSkeleton } from './components/VehicleSkeleton';
 import { HistorySheet } from './components/HistorySheet';
 import { LineChart } from './components/LineChart';
 import { LoginView } from './components/LoginView';
-import { LoginView } from './components/LoginView';
 import { ProfileSheet } from './components/ProfileSheet';
 import { SecuritySheet } from './components/SecuritySheet';
 import { PreferencesSheet } from './components/PreferencesSheet';

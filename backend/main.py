@@ -45,11 +45,6 @@ app.add_middleware(
     allow_origins=["*"],  # Allow all origins for debugging
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-    allow_headers=["*"],
-)
 
 # Debugging: Catch global exceptions to print traceback in logs
 import traceback

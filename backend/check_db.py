@@ -15,7 +15,8 @@ def check_data():
         
         # 1. Connection Check
         db.execute(text("SELECT 1"))
-        print("✅ Database Connected")
+        db_name = db.bind.url.database
+        print(f"✅ Database Connected: {db_name}")
         
         # 2. Check Users
         users = db.query(db_mod.User).all()

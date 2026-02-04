@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, CheckCircle, AlertTriangle, Info, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { cn } from '../lib/utils';
 // If no UI components, I'll use raw HTML/Tailwind
 
 interface Notification {

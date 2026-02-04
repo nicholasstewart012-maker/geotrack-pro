@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.pool import NullPool
 
 load_dotenv()
 
@@ -20,6 +21,12 @@ is_sqlite = SQLALCHEMY_DATABASE_URL.startswith("sqlite")
 engine_args = {}
 if is_sqlite:
     engine_args["connect_args"] = {"check_same_thread": False}
+else:
+    # OPTIMIZATION: Use NullPool for Vercel/Serverless to prevent connection timeouts/stale connections
+    # This forces a fresh connection per request, avoiding the "1.1 min" hang
+    engine_args["poolclass"] = NullPool
+    # Fail fast if DB is unreachable (10s instead of minutes)
+    engine_args["connect_args"] = {"connect_timeout": 10}
 
 # Handle Vercel's read-only filesystem by using in-memory SQLite if no DATABASE_URL is provided
 if is_sqlite and "maintenance.db" in SQLALCHEMY_DATABASE_URL and os.environ.get("VERCEL"):

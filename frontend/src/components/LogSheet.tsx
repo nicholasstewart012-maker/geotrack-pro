@@ -77,7 +77,7 @@ export const LogSheet: React.FC<LogSheetProps> = ({
                                         <input
                                             type="number"
                                             value={log.performed_at_mileage}
-                                            onChange={(e) => setLog({ ...log, performed_at_mileage: parseFloat(e.target.value) })}
+                                            onChange={(e) => setLog({ ...log, performed_at_mileage: parseFloat(e.target.value) || 0 })}
                                             className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 pl-12 text-white outline-none focus:bg-white/10 focus:border-ios-blue transition-all"
                                         />
                                     </div>
@@ -89,7 +89,7 @@ export const LogSheet: React.FC<LogSheetProps> = ({
                                         <input
                                             type="number"
                                             value={log.performed_at_hours}
-                                            onChange={(e) => setLog({ ...log, performed_at_hours: parseFloat(e.target.value) })}
+                                            onChange={(e) => setLog({ ...log, performed_at_hours: parseFloat(e.target.value) || 0 })}
                                             className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 pl-12 text-white outline-none focus:bg-white/10 focus:border-ios-blue transition-all"
                                         />
                                     </div>
@@ -103,7 +103,7 @@ export const LogSheet: React.FC<LogSheetProps> = ({
                                     <input
                                         type="number"
                                         value={log.cost}
-                                        onChange={(e) => setLog({ ...log, cost: parseFloat(e.target.value) })}
+                                        onChange={(e) => setLog({ ...log, cost: parseFloat(e.target.value) || 0 })}
                                         className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 pl-12 text-white outline-none focus:bg-white/10 focus:border-ios-blue transition-all"
                                     />
                                 </div>

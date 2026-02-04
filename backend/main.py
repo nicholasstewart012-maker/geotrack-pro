@@ -223,13 +223,44 @@ class Token(BaseModel):
 
 @app.get("/health")
 def health_check():
+    health_status = {
+        "status": "ok", 
+        "timestamp": datetime.now().isoformat(),
+        "database": "unknown"
+    }
+    
     if SAFE_MODE_ERROR:
         return {
             "status": "degraded", 
             "mode": "SAFE_MODE", 
             "error": SAFE_MODE_ERROR
         }
-    return {"status": "ok", "timestamp": datetime.now().isoformat()}
+    
+    # Try to connect to DB
+    try:
+        # Use a fresh session for check
+        if db_mod and hasattr(db_mod, "SessionLocal"):
+            db = db_mod.SessionLocal()
+            try:
+                # Simple query to verify connection and table existence
+                db.execute("SELECT 1")
+                health_status["database"] = "connected"
+                
+                # Check if tables exist
+                try:
+                    user_count = db.query(db_mod.User).count()
+                    health_status["user_count"] = user_count
+                except Exception as table_err:
+                    health_status["table_error"] = str(table_err)
+            except Exception as e:
+                 health_status["database_error"] = str(e)
+                 health_status["status"] = "db_error"
+            finally:
+                db.close()
+    except Exception as e:
+        health_status["database_Check_error"] = str(e)
+
+    return health_status
 
 # Helper for dependency injection
 def get_db_session():

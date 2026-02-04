@@ -233,7 +233,10 @@ const App = () => {
             } else {
                 const errData = await response.json();
                 console.error("Log failed:", errData);
-                alert(`Failed to save log: ${errData.detail || "Unknown error"}`);
+                const errorMsg = typeof errData.detail === 'object'
+                    ? JSON.stringify(errData.detail, null, 2)
+                    : errData.detail || "Unknown error";
+                alert(`Failed to save log:\n${errorMsg}`);
             }
         } catch (err) {
             console.error("Failed to log maintenance", err);

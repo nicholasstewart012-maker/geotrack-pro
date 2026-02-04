@@ -378,6 +378,26 @@ def get_vehicle_logs(vehicle_id: int, db: Session = Depends(lambda: next(get_db_
 def get_login_logs(db: Session = Depends(lambda: next(get_db_session()))):
     return db.query(db_mod.LoginLog).order_by(db_mod.LoginLog.login_time.desc()).limit(100).all()
 
+# --- Notifications API ---
+@app.get("/notifications")
+def get_notifications(db: Session = Depends(lambda: next(get_db_session()))):
+    return db.query(db_mod.Notification).order_by(db_mod.Notification.created_at.desc()).limit(50).all()
+
+@app.post("/notifications/{notif_id}/read")
+def mark_notification_read(notif_id: int, db: Session = Depends(lambda: next(get_db_session()))):
+    notif = db.query(db_mod.Notification).filter(db_mod.Notification.id == notif_id).first()
+    if notif:
+        notif.is_read = True
+        db.commit()
+    return {"status": "success"}
+
+@app.post("/notifications/read-all")
+def mark_all_notifications_read(db: Session = Depends(lambda: next(get_db_session()))):
+    db.query(db_mod.Notification).filter(db_mod.Notification.is_read == False).update({"is_read": True})
+    db.commit()
+    return {"status": "success"}
+# -------------------------
+
 
 
 @app.get("/analytics/cost")

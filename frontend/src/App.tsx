@@ -21,6 +21,7 @@ import { PreferencesSheet } from './components/PreferencesSheet';
 import { SupportSheet } from './components/SupportSheet';
 import { LoginLogsSheet } from './components/LoginLogsSheet';
 import { GlobalHistorySheet } from './components/GlobalHistorySheet';
+import { NotificationsSheet } from './components/NotificationsSheet';
 
 
 const getApiBase = () => {
@@ -646,12 +647,10 @@ const App = () => {
                 API_BASE={API_BASE}
             />
 
-            <SimpleSheet
+            <NotificationsSheet
                 isOpen={showNotifications}
                 onClose={() => setShowNotifications(false)}
-                title="Notifications"
-                icon={Mail}
-                description="We're building a real-time alert engine to keep you informed of critical fleet events. Coming soon!"
+                API_BASE={API_BASE}
             />
 
 

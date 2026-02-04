@@ -129,6 +129,15 @@ def check_maintenance_alerts(db: Session):
             
             if success:
                 schedule.last_alerted_at = datetime.utcnow()
+                
+                # Create In-App Notification
+                new_notif = db_mod.Notification(
+                    title=f"Maintenance Due: {vehicle.name}",
+                    message=f"{schedule.task_name} is overdue. Current: {current_val}, Due: {due_val}",
+                    type="warning"
+                )
+                db.add(new_notif)
+                
                 db.commit()
 
 def sync_status_data(api, db: Session):

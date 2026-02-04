@@ -1,17 +1,39 @@
-import database as db_mod
 import os
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from typing import List, Optional
-from datetime import datetime, timedelta
-from fastapi import FastAPI, Depends, HTTPException
+import traceback
+from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime
+from typing import List, Optional
 
-# Security Config
-SECRET_KEY = os.getenv("SECRET_KEY", "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7")
-ALGORITHM = "HS256"
+# --- SAFE MODE STARTUP ---
+# catch critical import errors (like database, jose, passlib)
+try:
+    from jose import JWTError, jwt
+    from passlib.context import CryptContext
+    from pydantic import BaseModel
+    from sqlalchemy.orm import Session
+    from datetime import datetime, timedelta
+    import database as db_mod
+except Exception as e:
+    print(f"CRITICAL IMPORT ERROR: {e}")
+    error_trace = traceback.format_exc()
+    
+    # Create a fallback app just to report the error
+    app = FastAPI(title="Safe Mode (Crash Reporter)")
+    
+    @app.api_route("/{path_name:path}", methods=["GET", "POST", "PUT", "DELETE"])
+    def catch_all(path_name: str):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "CRITICAL_BOOT_FAILURE", 
+                "detail": str(e), 
+                "traceback": error_trace
+            }
+        )
+    # Stop further execution - the fallback 'app' is now the ASGI app
+    raise RuntimeError("Stop Exec") from e
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")

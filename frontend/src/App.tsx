@@ -217,18 +217,27 @@ const App = () => {
     const handleLogMaintenance = async (logData: any) => {
         setIsSubmitting(true);
         try {
+            const token = localStorage.getItem('token');
+            const headers: any = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
             const response = await fetch(`${API_BASE}/logs`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(logData),
             });
+
             if (response.ok) {
                 setSelectedVehicle(null);
                 fetchVehicles();
+            } else {
+                const errData = await response.json();
+                console.error("Log failed:", errData);
+                alert(`Failed to save log: ${errData.detail || "Unknown error"}`);
             }
         } catch (err) {
             console.error("Failed to log maintenance", err);
-            alert("Error saving log.");
+            alert("Error saving log. Check console.");
         } finally {
             setIsSubmitting(false);
         }

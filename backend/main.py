@@ -5,6 +5,10 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from contextlib import asynccontextmanager
 
+# FIX: Add current directory to sys.path so local modules like 'database' can be imported on Vercel
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+
 # Third-party imports
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse

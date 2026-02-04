@@ -41,8 +41,6 @@ def seed_users(db: Session):
         db.add(new_user)
     db.commit()
 
-def seed_vehicles(db: Session):
-TASKS = ["Oil Change", "Tire Rotation", "Brake Inspection", "Air Filter Replace", "Transmission Flush"]
 
 def seed_vehicles(db: Session):
     print("🌱 Seeding Vehicles...")

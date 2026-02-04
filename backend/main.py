@@ -310,6 +310,25 @@ def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(lambda: next(ge
     db.refresh(db_vehicle)
     return db_vehicle
 
+@app.delete("/vehicles/{vehicle_id}")
+def delete_vehicle(vehicle_id: int, db: Session = Depends(lambda: next(get_db_session()))):
+    # Check existence
+    vehicle = db.query(db_mod.Vehicle).filter(db_mod.Vehicle.id == vehicle_id).first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+        
+    # Delete related logs first
+    db.query(db_mod.MaintenanceLog).filter(db_mod.MaintenanceLog.vehicle_id == vehicle_id).delete()
+    
+    # Delete related schedules
+    db.query(db_mod.MaintenanceSchedule).filter(db_mod.MaintenanceSchedule.vehicle_id == vehicle_id).delete()
+    
+    # Delete vehicle
+    db.delete(vehicle)
+    db.commit()
+    
+    return {"status": "success", "id": vehicle_id}
+
 @app.post("/schedules")
 def create_schedule(schedule: ScheduleCreate, db: Session = Depends(lambda: next(get_db_session()))):
     data = schedule.model_dump() if hasattr(schedule, "model_dump") else schedule.dict()

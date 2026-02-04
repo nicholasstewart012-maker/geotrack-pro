@@ -142,7 +142,7 @@ const App = () => {
     };
 
     const handleExport = () => {
-        window.location.href = `${API_BASE} /analytics/export`;
+        window.location.href = `${API_BASE}/analytics/export`;
     };
 
     const toggleProfile = () => {

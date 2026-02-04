@@ -16,7 +16,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
-app = FastAPI(title="Vehicle Maintenance API Pro")
+app = FastAPI(title="Vehicle Maintenance API Pro", root_path="/api")
 
 app.add_middleware(
     CORSMiddleware,

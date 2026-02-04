@@ -20,21 +20,14 @@ const getApiBase = () => {
     // If we provided an explicit API URL in environment variables
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
 
-    // Default to the secondary PC IP for production-like local hosting
-    const PROD_LOCAL_IP = '192.168.1.253';
-    const PORT = '8081';
-
-    if (typeof window === 'undefined') return `http://${PROD_LOCAL_IP}:${PORT}`;
-
-    // If running on the secondary PC itself or another device in the network
-    if (window.location.hostname === PROD_LOCAL_IP || window.location.hostname === 'localhost') {
-        return `http://${PROD_LOCAL_IP}:${PORT}`;
+    // In production (Vercel), we want to use the relative /api path
+    // which will be rewritten to the backend function
+    if (import.meta.env.PROD || window.location.hostname !== 'localhost') {
+        return '/api';
     }
 
-    // Fallback for dynamic detection
-    return window.location.origin.includes(':5173')
-        ? window.location.origin.replace(':5173', `:${PORT}`)
-        : `http://${PROD_LOCAL_IP}:${PORT}`;
+    // Default to local backend for development
+    return 'http://localhost:8000';
 };
 
 const API_BASE = getApiBase();

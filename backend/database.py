@@ -21,6 +21,11 @@ engine_args = {}
 if is_sqlite:
     engine_args["connect_args"] = {"check_same_thread": False}
 
+# Handle Vercel's read-only filesystem by using in-memory SQLite if no DATABASE_URL is provided
+if is_sqlite and "maintenance.db" in SQLALCHEMY_DATABASE_URL and os.environ.get("VERCEL"):
+    print("WARNING: Running on Vercel without DATABASE_URL. Switching to in-memory SQLite.")
+    SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+
 engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

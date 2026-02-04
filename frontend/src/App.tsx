@@ -31,6 +31,7 @@ const getApiBase = () => {
 };
 
 const API_BASE = getApiBase();
+console.log('API Base URL:', API_BASE);
 
 interface Vehicle {
     id: number;

@@ -63,6 +63,14 @@ async def lifespan(app: FastAPI):
         from database import engine as db_engine
         engine = db_engine
         
+        import migrate_db
+        import migrate_notifications
+        
+        # Run Migrations (Safe to run every time)
+        print("Running Database Migrations...")
+        migrate_db.add_column()
+        migrate_notifications.create_table()
+        
         from sqlalchemy import text as s_text # Import text for raw SQL
         text = s_text
 

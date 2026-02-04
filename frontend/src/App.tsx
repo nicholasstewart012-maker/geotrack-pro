@@ -151,7 +151,7 @@ const App = () => {
 
     const fetchStats = async () => {
         try {
-            const res = await fetch(`${API_BASE} /analytics/cost`);
+            const res = await fetch(`${API_BASE}/analytics/cost`);
             if (res.ok) {
                 const data = await res.json();
                 setStats(data);

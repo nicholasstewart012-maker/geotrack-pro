@@ -380,10 +380,7 @@ def get_cost_analytics(db: Session = Depends(lambda: next(get_db_session()))):
     total = sum(log.cost for log in logs)
     return {"total_maintenance_cost": total, "count": len(logs)}
 
-    return {
-        "labels": labels,
-        "data": data
-    }
+
 
 @app.get("/analytics/health")
 def get_health_index(db: Session = Depends(lambda: next(get_db_session()))):

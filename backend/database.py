@@ -18,14 +18,12 @@ if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
 
 is_sqlite = SQLALCHEMY_DATABASE_URL.startswith("sqlite")
 
-engine_args = {}
-if is_sqlite:
-    engine_args["connect_args"] = {"check_same_thread": False}
-else:
-    # OPTIMIZATION: Use NullPool for Vercel/Serverless to prevent connection timeouts/stale connections
-    # This forces a fresh connection per request, avoiding the "1.1 min" hang
-    engine_args["poolclass"] = NullPool
-    # Fail fast if DB is unreachable (10s instead of minutes)
+    # OPTIMIZATION: Use pool_pre_ping instead of NullPool for Vercel
+    # This checks if the connection is alive before using it, recovering from "SSL closed" errors
+    # without the overhead of creating a new connection every time (which caused the 36s latency).
+    engine_args["pool_pre_ping"] = True
+    engine_args["pool_recycle"] = 300 # Recycle connections every 5 minutes
+    
     # Force SSL for Supabase (required for Transaction Pooler 6543)
     engine_args["connect_args"] = {
         "connect_timeout": 10, 

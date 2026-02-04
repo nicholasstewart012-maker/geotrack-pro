@@ -17,14 +17,24 @@ import { LoginView } from './components/LoginView';
 import { ProfileSheet } from './components/ProfileSheet';
 
 const getApiBase = () => {
-    // If we provided an explicit API URL in environment variables (for Vercel/Production)
+    // If we provided an explicit API URL in environment variables
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
 
-    // Local fallback
-    if (typeof window === 'undefined') return 'http://localhost:8081';
+    // Default to the secondary PC IP for production-like local hosting
+    const PROD_LOCAL_IP = '192.168.1.253';
+    const PORT = '8081';
+
+    if (typeof window === 'undefined') return `http://${PROD_LOCAL_IP}:${PORT}`;
+
+    // If running on the secondary PC itself or another device in the network
+    if (window.location.hostname === PROD_LOCAL_IP || window.location.hostname === 'localhost') {
+        return `http://${PROD_LOCAL_IP}:${PORT}`;
+    }
+
+    // Fallback for dynamic detection
     return window.location.origin.includes(':5173')
-        ? window.location.origin.replace(':5173', ':8081')
-        : window.location.origin.replace(window.location.port, '8081');
+        ? window.location.origin.replace(':5173', `:${PORT}`)
+        : `http://${PROD_LOCAL_IP}:${PORT}`;
 };
 
 const API_BASE = getApiBase();

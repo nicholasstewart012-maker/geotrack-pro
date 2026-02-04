@@ -595,7 +595,7 @@ def export_logs_csv(db: Session = Depends(lambda: next(get_db_session()))):
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
-def send_email_notification(ticket: db_mod.SupportTicket, attachment_path: Optional[str] = None):
+def send_email_notification(ticket, attachment_path: Optional[str] = None):
     """Sends an email notification via Gmail SMTP."""
     if not EMAIL_USER or not EMAIL_PASS:
         print("WARNING: Email credentials not set. Skipping email.")

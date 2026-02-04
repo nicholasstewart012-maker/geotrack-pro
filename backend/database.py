@@ -26,7 +26,11 @@ else:
     # This forces a fresh connection per request, avoiding the "1.1 min" hang
     engine_args["poolclass"] = NullPool
     # Fail fast if DB is unreachable (10s instead of minutes)
-    engine_args["connect_args"] = {"connect_timeout": 10}
+    # Force SSL for Supabase (required for Transaction Pooler 6543)
+    engine_args["connect_args"] = {
+        "connect_timeout": 10, 
+        "sslmode": "require"
+    }
 
 # Handle Vercel's read-only filesystem by using in-memory SQLite if no DATABASE_URL is provided
 if is_sqlite and "maintenance.db" in SQLALCHEMY_DATABASE_URL and os.environ.get("VERCEL"):

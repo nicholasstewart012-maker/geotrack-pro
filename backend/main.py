@@ -54,6 +54,8 @@ async def lifespan(app: FastAPI):
         db_mod = db_module
         from database import engine as db_engine
         engine = db_engine
+        
+        from sqlalchemy import text # Import text for raw SQL
 
         # Initialize Security Context
         pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
@@ -243,7 +245,7 @@ def health_check():
             db = db_mod.SessionLocal()
             try:
                 # Simple query to verify connection and table existence
-                db.execute("SELECT 1")
+                db.execute(text("SELECT 1")) # Use text() wrapper
                 health_status["database"] = "connected"
                 
                 # Check if tables exist

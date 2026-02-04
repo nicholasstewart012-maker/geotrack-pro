@@ -18,6 +18,10 @@ if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
 
 is_sqlite = SQLALCHEMY_DATABASE_URL.startswith("sqlite")
 
+engine_args = {}
+if is_sqlite:
+    engine_args["connect_args"] = {"check_same_thread": False}
+else:
     # OPTIMIZATION: Use pool_pre_ping instead of NullPool for Vercel
     # This checks if the connection is alive before using it, recovering from "SSL closed" errors
     # without the overhead of creating a new connection every time (which caused the 36s latency).

@@ -25,14 +25,11 @@ export const HistorySheet: React.FC<HistorySheetProps> = ({
     const fetchLogs = async () => {
         setIsLoading(true);
         try {
-            // In a real app we'd filter by vehicle_id, for now we fetch all and filter in JS
-            const res = await fetch(`${API_BASE}/analytics/cost`); // This endpoint currently returns a summary
-            // Let's assume there's a /logs/{id} endpoint we'll need to add or just use internal filter if we had all logs
-            // For this demo, let's show some mock history if real fetch fails or is empty
-            setLogs([
-                { id: 1, task_name: 'Oil Change', performed_at_mileage: vehicle.current_mileage - 3000, cost: 85.00, date: '2024-01-15' },
-                { id: 2, task_name: 'Tire Rotation', performed_at_mileage: vehicle.current_mileage - 5000, cost: 45.00, date: '2023-11-20' },
-            ]);
+            const res = await fetch(`${API_BASE}/logs/${vehicle.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setLogs(data);
+            }
         } catch (err) {
             console.error("Failed to fetch logs", err);
         } finally {

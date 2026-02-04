@@ -125,6 +125,10 @@ def create_log(log: LogCreate, db: Session = Depends(db_mod.get_db)):
     db.commit()
     return {"status": "success"}
 
+@app.get("/logs/{vehicle_id}")
+def get_vehicle_logs(vehicle_id: int, db: Session = Depends(db_mod.get_db)):
+    return db.query(db_mod.MaintenanceLog).filter(db_mod.MaintenanceLog.vehicle_id == vehicle_id).order_by(db_mod.MaintenanceLog.performed_date.desc()).all()
+
 @app.get("/analytics/cost")
 def get_cost_analytics(db: Session = Depends(db_mod.get_db)):
     logs = db.query(db_mod.MaintenanceLog).all()

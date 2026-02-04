@@ -6,11 +6,13 @@ interface ProfileSheetProps {
     isOpen: boolean;
     onClose: () => void;
     onLogout: () => void;
+    onSecurityClick: () => void;
+    onPreferencesClick: () => void;
     user: { email: string; full_name?: string };
 }
 
 export const ProfileSheet: React.FC<ProfileSheetProps> = ({
-    isOpen, onClose, onLogout, user
+    isOpen, onClose, onLogout, onSecurityClick, onPreferencesClick, user
 }) => {
     return (
         <AnimatePresence>
@@ -49,7 +51,10 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({
                         </div>
 
                         <div className="space-y-3">
-                            <button className="w-full ios-card p-4 flex items-center justify-between group active:bg-white/5 transition-colors">
+                            <button
+                                onClick={onSecurityClick}
+                                className="w-full ios-card p-4 flex items-center justify-between group active:bg-white/5 transition-colors"
+                            >
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-xl bg-ios-blue/10 flex items-center justify-center text-ios-blue">
                                         <Shield size={16} />
@@ -59,7 +64,10 @@ export const ProfileSheet: React.FC<ProfileSheetProps> = ({
                                 <ChevronRight size={14} className="text-white/20 group-hover:text-white/40 transition-colors" />
                             </button>
 
-                            <button className="w-full ios-card p-4 flex items-center justify-between group active:bg-white/5 transition-colors">
+                            <button
+                                onClick={onPreferencesClick}
+                                className="w-full ios-card p-4 flex items-center justify-between group active:bg-white/5 transition-colors"
+                            >
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
                                         <Settings size={16} />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Settings, BarChart3, Truck,
-    Plus, Gauge, RefreshCw, User, Mail, ChevronRight
+    Plus, Gauge, RefreshCw, User, Mail, ChevronRight, Shield
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { VehicleCard } from './components/VehicleCard';
@@ -59,6 +59,8 @@ const App = () => {
     const [showSupport, setShowSupport] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
+    const [showSecurity, setShowSecurity] = useState(false);
+    const [showPreferences, setShowPreferences] = useState(false);
     const [user, setUser] = useState({ email: 'admin@geotrack.pro', full_name: 'Fleet Manager' });
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -71,11 +73,29 @@ const App = () => {
         geotab_pass: '',
         admin_email: ''
     });
+    const [stats, setStats] = useState({ total_maintenance_cost: 0, count: 0 });
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            setIsAuthenticated(true);
+        }
         fetchVehicles();
         fetchSettings();
+        fetchStats();
     }, []);
+
+    const fetchStats = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/analytics/cost`);
+            if (res.ok) {
+                const data = await res.json();
+                setStats(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch stats", err);
+        }
+    };
 
     const fetchSettings = async () => {
         try {
@@ -148,13 +168,31 @@ const App = () => {
             setIsSubmitting(false);
         }
     };
-    const handleLogin = (credentials: any) => {
+    const handleLogin = async (credentials: any) => {
         setIsSubmitting(true);
-        // Mock authentication for now
-        setTimeout(() => {
+        try {
+            const response = await fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(credentials),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || "Login failed");
+            }
+
+            const data = await response.json();
+            localStorage.setItem('token', data.access_token);
             setIsAuthenticated(true);
+            fetchVehicles();
+            fetchSettings();
+        } catch (err: any) {
+            console.error("Login error:", err);
+            alert(err.message || "Invalid email or password.");
+        } finally {
             setIsSubmitting(false);
-        }, 1500);
+        }
     };
 
     const handleLogMaintenance = async (logData: any) => {
@@ -209,7 +247,10 @@ const App = () => {
                         <button onClick={fetchVehicles} className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-90 transition-all">
                             <RefreshCw size={18} />
                         </button>
-                        <button className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white">
+                        <button
+                            onClick={() => setShowProfile(true)}
+                            className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white active:scale-90 transition-all"
+                        >
                             <User size={18} />
                         </button>
                     </div>
@@ -296,12 +337,12 @@ const App = () => {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="ios-card p-6 border-l-4 border-l-ios-amber/50">
-                                        <p className="text-[10px] font-black text-ios-secondary uppercase tracking-widest mb-1">Active Alerts</p>
-                                        <h4 className="text-3xl font-black text-white">04</h4>
+                                        <p className="text-[10px] font-black text-ios-secondary uppercase tracking-widest mb-1">Maint. Cost</p>
+                                        <h4 className="text-2xl font-black text-white">${stats.total_maintenance_cost.toLocaleString()}</h4>
                                     </div>
                                     <div className="ios-card p-6 border-l-4 border-l-ios-green/50">
                                         <p className="text-[10px] font-black text-ios-secondary uppercase tracking-widest mb-1">Total Logs</p>
-                                        <h4 className="text-3xl font-black text-white">12</h4>
+                                        <h4 className="text-3xl font-black text-white">{stats.count}</h4>
                                     </div>
                                 </div>
                             </motion.div>
@@ -377,8 +418,17 @@ const App = () => {
                 isOpen={showProfile}
                 onClose={() => setShowProfile(false)}
                 onLogout={() => {
+                    localStorage.removeItem('token');
                     setIsAuthenticated(false);
                     setShowProfile(false);
+                }}
+                onSecurityClick={() => {
+                    setShowProfile(false);
+                    setShowSecurity(true);
+                }}
+                onPreferencesClick={() => {
+                    setShowProfile(false);
+                    setShowPreferences(true);
                 }}
                 user={user}
             />
@@ -432,6 +482,22 @@ const App = () => {
                 title="Support"
                 icon={User}
                 description="Need help? Our enterprise support team is just a tap away. Implementation in progress."
+            />
+
+            <SimpleSheet
+                isOpen={showSecurity}
+                onClose={() => setShowSecurity(false)}
+                title="Security"
+                icon={Shield}
+                description="Enhanced security controls including Two-Factor Authentication and API key management are coming in the next update."
+            />
+
+            <SimpleSheet
+                isOpen={showPreferences}
+                onClose={() => setShowPreferences(false)}
+                title="Preferences"
+                icon={Settings}
+                description="Customize your dashboard experience, notification frequency, and theme settings here soon."
             />
         </div>
     );

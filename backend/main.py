@@ -10,9 +10,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 
 # Third-party imports
-from fastapi import FastAPI, Depends, HTTPException, Request
+from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 
 # --- CONFIGURATION ---
@@ -142,6 +143,9 @@ def verify_password(plain_password, hashed_password):
         return pwd_context.verify(plain_password, hashed_password)
     raise RuntimeError("Security context not initialized")
 
+# --- SECURITY SCHEME ---
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
 def create_access_token(data: dict):
     if not jwt:
          raise RuntimeError("JWT library not initialized")
@@ -149,6 +153,29 @@ def create_access_token(data: dict):
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(lambda: next(get_db_session()))):
+    if not jwt:
+        raise HTTPException(status_code=503, detail="Auth not initialized")
+    
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except Exception: # JWTError
+        raise credentials_exception
+        
+    user = db.query(db_mod.User).filter(db_mod.User.email == email).first()
+    if user is None:
+        raise credentials_exception
+    return user
 
 # --- PYDANTIC SCHEMAS ---
 class VehicleBase(BaseModel):
@@ -281,6 +308,14 @@ def update_settings(settings: dict, db: Session = Depends(lambda: next(get_db_se
         db.merge(db_setting)
     db.commit()
     return {"status": "success"}
+
+@app.get("/auth/me")
+def read_users_me(current_user: UserCreate = Depends(get_current_user)):
+    return {
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        # Don't return password obviously
+    }
 
 @app.post("/auth/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(lambda: next(get_db_session()))):

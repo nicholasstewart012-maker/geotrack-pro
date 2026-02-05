@@ -192,13 +192,26 @@ def sync_status_data(api, db: Session):
         print(f"❌ Error syncing status data: {e}")
         db.rollback()
 
+import argparse
+
 def main():
+    parser = argparse.ArgumentParser(description="Geotab Sync Service")
+    parser.add_argument("--once", action="store_true", help="Run sync once and exit")
+    args = parser.parse_args()
+
     print("🚀 Starting Geotab Sync Service...")
-    print("   Press Ctrl+C to stop.")
+    if args.once:
+        print("   Mode: Run Once")
+    else:
+        print("   Mode: Continuous Loop")
+        print("   Press Ctrl+C to stop.")
     
     while True:
         api = get_geotab_api()
         if not api:
+            if args.once:
+                print("❌ Failed to authenticate. Exiting.")
+                return
             print("   Retrying in 60s...")
             time.sleep(60)
             continue
@@ -213,6 +226,10 @@ def main():
         except Exception as e:
             print(f"❌ Database Connection Failed: {e}")
         
+        if args.once:
+            print("✅ Sync complete. Exiting.")
+            break
+            
         print(f"💤 Sleeping {SYNC_INTERVAL}s...")
         time.sleep(SYNC_INTERVAL)
 

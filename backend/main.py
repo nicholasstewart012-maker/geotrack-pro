@@ -67,9 +67,15 @@ async def lifespan(app: FastAPI):
         import migrate_notifications
         
         # Run Migrations (Safe to run every time)
+        # Run Migrations (Safe to run every time)
         print("Running Database Migrations...")
-        migrate_db.add_column()
-        migrate_notifications.create_table()
+        try:
+            migrate_db.add_column()
+            migrate_notifications.create_table()
+        except Exception as e:
+            print(f"WARNING: Migrations failed (likely connection issue): {e}")
+            # Do NOT raise, let the app start so we can see health check errors
+            pass
         
         from sqlalchemy import text as s_text # Import text for raw SQL
         text = s_text

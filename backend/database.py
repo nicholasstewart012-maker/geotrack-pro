@@ -29,6 +29,18 @@ if is_sqlite and "maintenance.db" in SQLALCHEMY_DATABASE_URL and os.environ.get(
     print("WARNING: Running on Vercel without DATABASE_URL. Switching to in-memory SQLite.")
     SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
+if "postgresql" in SQLALCHEMY_DATABASE_URL:
+    engine_args["pool_pre_ping"] = True
+    engine_args["pool_recycle"] = 300
+    # Set a strict timeout so Vercel doesn't hang for 300s
+    engine_args["connect_args"] = {
+        "connect_timeout": 5, # 5 seconds connection timeout
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5
+    }
+
 engine = create_engine(SQLALCHEMY_DATABASE_URL, **engine_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

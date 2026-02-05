@@ -64,6 +64,18 @@ def sync_vehicles(api, db: Session):
                     last_sync=datetime.utcnow()
                 )
                 db.add(new_v)
+                db.flush() # Get ID
+
+                # Create default schedule (Oil Change every 5000 miles)
+                default_schedule = db_mod.MaintenanceSchedule(
+                    vehicle_id=new_v.id,
+                    task_name="Oil Change",
+                    tracking_type="miles",
+                    interval_value=5000.0,
+                    alert_thresholds="4500,4800"
+                )
+                db.add(default_schedule)
+                
                 count_new += 1
         
         db.commit()

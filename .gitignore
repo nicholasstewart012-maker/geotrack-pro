@@ -27,3 +27,6 @@ requirements.txt.bak
 # OS
 .DS_Store
 Thumbs.db
+
+# Support Scripts
+backend/scripts/

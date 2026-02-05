@@ -331,7 +331,15 @@ def get_db_session():
 @app.get("/vehicles", response_model=List[Vehicle])
 def read_vehicles(db: Session = Depends(lambda: next(get_db_session()))): 
     # Use explicit lambda deferral and handling for Session type hint
-    return db.query(db_mod.Vehicle).options(joinedload(db_mod.Vehicle.schedules)).all()
+    print("DEBUG: read_vehicles called")
+    try:
+        print("DEBUG: Executing query...")
+        vehicles = db.query(db_mod.Vehicle).options(joinedload(db_mod.Vehicle.schedules)).all()
+        print(f"DEBUG: Query complete. Found {len(vehicles)} vehicles.")
+        return vehicles
+    except Exception as e:
+        print(f"DEBUG: read_vehicles failed: {e}")
+        raise
 
 @app.post("/vehicles", response_model=Vehicle)
 def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(lambda: next(get_db_session()))):

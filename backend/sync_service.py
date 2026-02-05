@@ -153,7 +153,7 @@ def sync_status_data(api, db: Session):
                 odom_readings = api.get("StatusData", search={
                     "deviceSearch": {"id": v.geotab_id},
                     "diagnosticSearch": {"id": "DiagnosticOdometerId"},
-                    "fromDate": (datetime.utcnow() - timedelta(hours=1)).isoformat() + "Z",
+                    "fromDate": (datetime.utcnow() - timedelta(days=14)).isoformat() + "Z",
                     "take": 1
                 })
                 
@@ -165,14 +165,23 @@ def sync_status_data(api, db: Session):
                     v.current_mileage = round(miles, 1)
 
                 # Get AccessEngineHours
+                # Get AccessEngineHours
+                # Try Wrapper first (usually correct for billing/runtime)
                 hours_readings = api.get("StatusData", search={
                     "deviceSearch": {"id": v.geotab_id},
-                    "diagnosticSearch": {"id": "DiagnosticEngineHoursWrapperId"}, # or similar
-                    "fromDate": (datetime.utcnow() - timedelta(hours=1)).isoformat() + "Z",
+                    "diagnosticSearch": {"id": "DiagnosticEngineHoursWrapperId"},
+                    "fromDate": (datetime.utcnow() - timedelta(days=14)).isoformat() + "Z",
                     "take": 1
                 })
-                # Fallback to DiagnosticEngineHoursId if Wrapper not found? 
-                # Keep simple for now.
+                
+                # Fallback to raw Engine Hours if Wrapper is empty
+                if not hours_readings:
+                    hours_readings = api.get("StatusData", search={
+                        "deviceSearch": {"id": v.geotab_id},
+                        "diagnosticSearch": {"id": "DiagnosticEngineHoursId"},
+                        "fromDate": (datetime.utcnow() - timedelta(days=14)).isoformat() + "Z",
+                        "take": 1
+                    })
                 
                 if hours_readings:
                     # Seconds to Hours

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Truck, Trash2 } from 'lucide-react';
+import { Activity, Truck, Trash2, Edit } from 'lucide-react';
 import { cn, formatMileage } from '../lib/utils';
 
 interface VehicleCardProps {
@@ -9,9 +9,34 @@ interface VehicleCardProps {
     onLogClick: () => void;
     onHistoryClick: () => void;
     onDelete: () => void;
+    onEditSchedule: (schedule: any) => void;
 }
 
-export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, index, onLogClick, onHistoryClick, onDelete }) => {
+export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, index, onLogClick, onHistoryClick, onDelete, onEditSchedule }) => {
+    // Determine primary schedule (prioritize one passed due or highest percentage)
+    const schedules = vehicle.schedules || [];
+    const primarySchedule = schedules.length > 0 ? schedules[0] : null;
+
+    let progress = 0;
+    let label = "No Schedule";
+    let status = "Healthy";
+
+    if (primarySchedule) {
+        const isMiles = primarySchedule.tracking_type === 'miles';
+        const currentVal = isMiles ? vehicle.current_mileage : vehicle.current_hours;
+        const lastPerformed = primarySchedule.last_performed_value || 0;
+        const interval = primarySchedule.interval_value || 5000;
+        const used = currentVal - lastPerformed;
+
+        progress = (used / interval) * 100;
+        const nextDue = lastPerformed + interval;
+
+        label = `${used.toFixed(0)} / ${interval} ${isMiles ? 'MI' : 'HR'}`;
+
+        // Critical if > 90% or overdue
+        if (progress >= 90) status = 'Critical';
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -31,12 +56,12 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, index, onLogC
                     <div className="flex gap-2">
                         <div className={cn(
                             "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-black text-[10px] uppercase shadow-inner",
-                            vehicle.current_mileage % 5000 > 4500
+                            status === 'Critical'
                                 ? 'bg-ios-red/10 border-ios-red/20 text-ios-red animate-pulse'
                                 : 'bg-ios-green/10 border-ios-green/20 text-ios-green'
                         )}>
                             <Activity size={12} />
-                            {vehicle.current_mileage % 5000 > 4500 ? 'Critical' : 'Healthy'}
+                            {status}
                         </div>
 
                         <button
@@ -65,16 +90,26 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, index, onLogC
 
                 <div className="space-y-3 pt-2">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-ios-secondary">
-                        <span>Next Service Cycle</span>
-                        <span className="text-white">{(vehicle.current_mileage % 5000).toFixed(0)} / 5,000 MI</span>
+                        <span>Next Service ({primarySchedule?.task_name || 'N/A'})</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-white">{label}</span>
+                            {primarySchedule && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onEditSchedule(primarySchedule); }}
+                                    className="p-1 bg-white/10 rounded hover:bg-white/20 text-ios-blue transition-colors"
+                                >
+                                    <Edit size={12} />
+                                </button>
+                            )}
+                        </div>
                     </div>
                     <div className="h-2.5 w-full bg-white/10 rounded-full overflow-hidden border border-white/5 p-[1px]">
                         <motion.div
                             initial={{ width: 0 }}
-                            animate={{ width: `${(vehicle.current_mileage % 5000) / 50}%` }}
+                            animate={{ width: `${Math.min(progress, 100)}%` }}
                             className={cn(
                                 "h-full rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]",
-                                vehicle.current_mileage % 5000 > 4500 ? 'bg-ios-red' : 'bg-ios-blue'
+                                progress > 90 ? 'bg-ios-red' : 'bg-ios-blue'
                             )}
                         />
                     </div>

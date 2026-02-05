@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import { VehicleCard } from './components/VehicleCard';
+import { EditScheduleModal } from './components/EditScheduleModal';
 import { EnrollmentSheet } from './components/EnrollmentSheet';
 import { ConfigSheet } from './components/ConfigSheet';
 import { LogSheet } from './components/LogSheet';
@@ -22,7 +23,6 @@ import { SupportSheet } from './components/SupportSheet';
 import { LoginLogsSheet } from './components/LoginLogsSheet';
 import { GlobalHistorySheet } from './components/GlobalHistorySheet';
 import { NotificationsSheet } from './components/NotificationsSheet';
-
 
 const getApiBase = () => {
     // If we provided an explicit API URL in environment variables
@@ -41,6 +41,14 @@ const getApiBase = () => {
 const API_BASE = getApiBase();
 console.log('API Base URL:', API_BASE);
 
+interface Schedule {
+    id: number;
+    task_name: string;
+    tracking_type: string;
+    interval_value: number;
+    last_performed_value: number;
+}
+
 interface Vehicle {
     id: number;
     geotab_id: string;
@@ -49,6 +57,7 @@ interface Vehicle {
     current_mileage: number;
     current_hours: number;
     last_sync: string;
+    schedules?: Schedule[];
 }
 
 const App = () => {
@@ -80,7 +89,37 @@ const App = () => {
     const [stats, setStats] = useState({ total_maintenance_cost: 0, count: 0 });
     const [healthIndex, setHealthIndex] = useState({ health_index: 100, vehicles_in_shop_last_30d: 0 });
     const [costTrend, setCostTrend] = useState<{ labels: string[], data: number[] }>({ labels: [], data: [] });
+    const [showEditSchedule, setShowEditSchedule] = useState(false);
+    const [editingSchedule, setEditingSchedule] = useState<any>(null);
     const [trendPeriod, setTrendPeriod] = useState("6M");
+
+    const handleSaveSchedule = async (scheduleId: number, updates: any) => {
+        setIsSubmitting(true);
+        try {
+            const token = sessionStorage.getItem('token');
+            const headers: any = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const res = await fetch(`${API_BASE}/schedules/${scheduleId}`, {
+                method: 'PUT',
+                headers: headers,
+                body: JSON.stringify(updates)
+            });
+
+            if (res.ok) {
+                setShowEditSchedule(false);
+                setEditingSchedule(null);
+                fetchVehicles(); // Refresh data
+            } else {
+                alert("Failed to update schedule");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error updating schedule");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     useEffect(() => {
         const token = sessionStorage.getItem('token');
@@ -410,6 +449,10 @@ const App = () => {
                                                     setShowHistory(true);
                                                 }}
                                                 onDelete={() => handleDeleteVehicle(v.id)}
+                                                onEditSchedule={(schedule) => {
+                                                    setEditingSchedule(schedule);
+                                                    setShowEditSchedule(true);
+                                                }}
                                             />
                                         ))
                                     )}
@@ -688,6 +731,14 @@ const App = () => {
                 onClose={() => setShowSupport(false)}
                 API_BASE={API_BASE}
                 userEmail={user.email || 'user@example.com'}
+            />
+
+            <EditScheduleModal
+                isOpen={showEditSchedule}
+                onClose={() => setShowEditSchedule(false)}
+                schedule={editingSchedule}
+                onSave={handleSaveSchedule}
+                isSubmitting={isSubmitting}
             />
         </div>
     );

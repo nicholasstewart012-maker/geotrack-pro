@@ -25,5 +25,12 @@ try:
                 print(f" - {table}: {count} rows")
             except Exception as table_err:
                  print(f" - {table}: (Error counting: {table_err})")
+    
+    # Check sample vehicle
+    with engine.connect() as connection:
+        print("\n Checking first 3 vehicles for telemetry:")
+        result = connection.execute(text("SELECT name, current_mileage, current_hours FROM vehicles LIMIT 3"))
+        for row in result:
+             print(f"   - {row[0]}: {row[1]} mi, {row[2]} hrs")
 except Exception as e:
     print(f"Error: {e}")

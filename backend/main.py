@@ -205,11 +205,29 @@ class VehicleBase(BaseModel):
 class VehicleCreate(VehicleBase):
     pass
 
+class Schedule(BaseModel):
+    id: int
+    vehicle_id: int
+    task_name: str
+    tracking_type: str
+    interval_value: float
+    last_performed_value: float
+    last_performed_date: datetime
+    alert_thresholds: Optional[str] = None
+    class Config:
+        from_attributes = True
+
+class ScheduleUpdate(BaseModel):
+    interval_value: Optional[float] = None
+    last_performed_value: Optional[float] = None
+    alert_thresholds: Optional[str] = None
+
 class Vehicle(VehicleBase):
     id: int
     current_mileage: float
     current_hours: float
     last_sync: datetime
+    schedules: List[Schedule] = []
     class Config:
         from_attributes = True
 
@@ -313,7 +331,7 @@ def get_db_session():
 @app.get("/vehicles", response_model=List[Vehicle])
 def read_vehicles(db: Session = Depends(lambda: next(get_db_session()))): 
     # Use explicit lambda deferral and handling for Session type hint
-    return db.query(db_mod.Vehicle).all()
+    return db.query(db_mod.Vehicle).options(joinedload(db_mod.Vehicle.schedules)).all()
 
 @app.post("/vehicles", response_model=Vehicle)
 def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(lambda: next(get_db_session()))):
@@ -323,6 +341,19 @@ def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(lambda: next(ge
     db.add(db_vehicle)
     db.commit()
     db.refresh(db_vehicle)
+    
+    # Create default schedule (Oil Change every 5000 miles)
+    default_schedule = db_mod.MaintenanceSchedule(
+        vehicle_id=db_vehicle.id,
+        task_name="Oil Change",
+        tracking_type="miles",
+        interval_value=5000.0,
+        alert_thresholds="4500,4800"
+    )
+    db.add(default_schedule)
+    db.commit()
+    db.refresh(db_vehicle)
+    
     return db_vehicle
 
 @app.delete("/vehicles/{vehicle_id}")
@@ -355,6 +386,22 @@ def create_schedule(schedule: ScheduleCreate, db: Session = Depends(lambda: next
 @app.get("/schedules/{vehicle_id}")
 def get_schedules(vehicle_id: int, db: Session = Depends(lambda: next(get_db_session()))):
     return db.query(db_mod.MaintenanceSchedule).filter(db_mod.MaintenanceSchedule.vehicle_id == vehicle_id).all()
+
+@app.put("/schedules/{schedule_id}")
+def update_schedule(schedule_id: int, updates: ScheduleUpdate, db: Session = Depends(lambda: next(get_db_session()))):
+    schedule = db.query(db_mod.MaintenanceSchedule).filter(db_mod.MaintenanceSchedule.id == schedule_id).first()
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    
+    if updates.interval_value is not None:
+        schedule.interval_value = updates.interval_value
+    if updates.last_performed_value is not None:
+        schedule.last_performed_value = updates.last_performed_value
+    if updates.alert_thresholds is not None:
+        schedule.alert_thresholds = updates.alert_thresholds
+        
+    db.commit()
+    return {"status": "success"}
 
 @app.post("/logs")
 def create_log(log: LogCreate, db: Session = Depends(lambda: next(get_db_session()))):

@@ -334,13 +334,24 @@ def get_db_session():
         raise HTTPException(status_code=503, detail="Database not initialized")
     return db_mod.get_db()
 
-@app.get("/vehicles", response_model=List[Vehicle])
+class VehicleSimple(VehicleBase):
+    id: int
+    current_mileage: float
+    current_hours: float
+    last_sync: datetime
+    # schedules excluded for debugging
+    class Config:
+        from_attributes = True
+
+# Debug: Retrying without joinedload to isolate timeout issue
+@app.get("/vehicles", response_model=List[VehicleSimple])
 def read_vehicles(db: Session = Depends(lambda: next(get_db_session()))): 
     # Use explicit lambda deferral and handling for Session type hint
-    print("DEBUG: read_vehicles called")
+    print("DEBUG: read_vehicles called (SIMPLE MODE)")
     try:
-        print("DEBUG: Executing query...")
-        vehicles = db.query(db_mod.Vehicle).options(joinedload(db_mod.Vehicle.schedules)).all()
+        print("DEBUG: Executing query (No Join)...")
+        # Just get vehicles, no schedules
+        vehicles = db.query(db_mod.Vehicle).all()
         print(f"DEBUG: Query complete. Found {len(vehicles)} vehicles.")
         return vehicles
     except Exception as e:
